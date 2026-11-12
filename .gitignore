@@ -10,7 +10,13 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+.vercel
+.env
+.env.*
+!.env.example
 *.local
+*service-account*.json
+*firebase-adminsdk*.json
 
 # Editor directories and files
 .vscode/*

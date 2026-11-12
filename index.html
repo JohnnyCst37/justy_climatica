@@ -3,14 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vozes do Clima & BioPatrimônio MT — Mostra Científica 9º Ano</title>
-    <meta name="description" content="Mural digital interativo sobre Justiça climática dos Povos Tradicionais do Mato Grosso - EE João Ribeiro Vilela (Prof. Johnny Martins Fernandes)" />
-    <meta property="og:title" content="Vozes do Clima & BioPatrimônio MT — Mostra Científica 9º Ano" />
-    <meta property="og:description" content="Mural digital interativo sobre Justiça climática dos Povos Tradicionais do Mato Grosso" />
+    <title>Vozes do Clima & BioPatrimônio MT — Justiça Climática e Ciência Clara</title>
+    <meta
+      name="description"
+      content="Plataforma interativa de Justiça Climática, Ciência Clara e Saberes Tradicionais em Mato Grosso — EE João Ribeiro Vilela"
+    />
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..600&family=IBM+Plex+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..600&family=IBM+Plex+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
     <script>
       tailwind.config = {
         theme: {
@@ -19,13 +23,14 @@
               rounded: ['"Plus Jakarta Sans"', 'sans-serif'],
               sans: ['"DM Sans"', '"Plus Jakarta Sans"', 'sans-serif'],
               mono: ['"IBM Plex Mono"', 'monospace'],
-            }
-          }
-        }
-      }
+            },
+          },
+        },
+      };
     </script>
     <style>
-      body, html {
+      body,
+      html {
         margin: 0;
         padding: 0;
         height: 100%;
@@ -41,22 +46,9 @@
         scrollbar-width: none;
       }
     </style>
-  <script type="importmap">
-{
-  "imports": {
-    "@google/genai": "https://esm.sh/@google/genai@^1.38.0",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "react/": "https://esm.sh/react@^19.2.4/",
-    "react": "https://esm.sh/react@^19.2.4",
-    "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
-    "d3": "https://esm.sh/d3@7.9.0",
-    "topojson-client": "https://esm.sh/topojson-client@3.1.0"
-  }
-}
-</script>
-</head>
+  </head>
   <body class="bg-[#f8f7f3] text-slate-900 selection:bg-emerald-200 selection:text-emerald-950">
     <div id="root" class="h-full w-full"></div>
-  <script type="module" src="/index.tsx"></script>
-</body>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>

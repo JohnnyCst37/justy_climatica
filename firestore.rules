@@ -1,0 +1,80 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isProfessor() {
+      return isSignedIn() && (
+        request.auth.token.role == 'professor' ||
+        exists(/databases/$(database)/documents/professors/$(request.auth.uid))
+      );
+    }
+
+    // Comunidades curadas e conteúdo pedagógico oficial
+    match /communities/{communityId} {
+      allow read: if resource.data.status == 'published' || isSignedIn();
+      allow create, update, delete: if isProfessor();
+    }
+
+    // Comunidades tradicionais anônimas descobertas via Google Search Grounding (escrita apenas server-side)
+    match /discovered_communities/{docId} {
+      allow read: if isSignedIn() || resource.data.status == 'published';
+      allow write: if false;
+    }
+
+    // Trabalhos dos alunos ("Que escola está falando hoje desta comunidade?")
+    match /school_works/{workId} {
+      allow read: if resource.data.status == 'approved'
+        || (isSignedIn() && resource.data.authorUid == request.auth.uid)
+        || isProfessor();
+
+      allow create: if isSignedIn()
+        && request.resource.data.authorUid == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.schoolName is string
+        && request.resource.data.communityId is string;
+
+      allow update: if isProfessor() || (
+        isSignedIn()
+        && resource.data.authorUid == request.auth.uid
+        && resource.data.status == 'pending'
+        && request.resource.data.status == 'pending'
+      );
+
+      allow delete: if isProfessor() || (
+        isSignedIn() && resource.data.authorUid == request.auth.uid
+      );
+    }
+
+    // Perfil LGPD pseudonimizado (apenas apelido, turma e papel — sem PII obrigatória)
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+
+      // Estado das 3 jornadas isoladas por comunidade
+      match /journeys/{communityId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // Lista de professores curadores (gerenciada exclusivamente via Console / Admin SDK)
+    match /professors/{uid} {
+      allow read: if isOwner(uid);
+      allow write: if false;
+    }
+
+    // Controle FinOps e reservas Anti-TOCTOU (exclusivo server-side Admin SDK)
+    match /ai_quota_usage/{docId} {
+      allow read, write: if false;
+    }
+
+    match /ai_quota_global/{docId} {
+      allow read, write: if false;
+    }
+  }
+}
