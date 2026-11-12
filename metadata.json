@@ -1,0 +1,8 @@
+{
+  "name": "Vozes do Clima \u0026 BioPatrimônio MT",
+  "description": "Mural digital interativo sobre Justiça climática dos Povos Tradicionais do Mato Grosso",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
