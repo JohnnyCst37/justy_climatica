@@ -18,13 +18,12 @@ service cloud.firestore {
 
     // Lista de e-mails pré-cadastrados para envio e moderação do evento
     match /authorized_emails/{email} {
-      allow read: if true;
-      allow write: if isSignedIn();
+      allow read, write: if isSignedIn();
     }
 
     // Comunidades curadas e novos territórios cadastrados pelas equipes
     match /communities/{communityId} {
-      allow read: if true;
+      allow read: if resource.data.status == 'published' || isSignedIn();
       allow create, update: if isSignedIn();
       allow delete: if isProfessor();
     }
@@ -37,7 +36,9 @@ service cloud.firestore {
 
     // Trabalhos dos alunos ("Que escola está falando hoje desta comunidade?")
     match /school_works/{workId} {
-      allow read: if true;
+      allow read: if resource.data.status == 'approved'
+        || (isSignedIn() && resource.data.authorUid == request.auth.uid)
+        || isProfessor();
 
       allow create: if isSignedIn()
         && request.resource.data.authorUid == request.auth.uid

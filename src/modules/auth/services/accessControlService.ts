@@ -104,6 +104,13 @@ export function canAccessSubmissionPortal(user: UserProfile | null): boolean {
   );
 }
 
+async function ensureFirebaseSession(): Promise<void> {
+  const auth = getFirebaseAuthClient();
+  if (auth && !auth.currentUser) {
+    await signInAnonymously(auth).catch(() => undefined);
+  }
+}
+
 export async function listAuthorizedEmails(): Promise<AuthorizedEmailEntry[]> {
   const seeds = getSeedSuperAdminEntries();
   const local = loadLocalEntries();
@@ -114,6 +121,7 @@ export async function listAuthorizedEmails(): Promise<AuthorizedEmailEntry[]> {
   }
 
   try {
+    await ensureFirebaseSession();
     const snap = await getDocs(collection(db, 'authorized_emails'));
     const remote = snap.docs.map((d) => d.data() as AuthorizedEmailEntry);
     return mergeEntries([local, remote, seeds]);
@@ -132,6 +140,7 @@ export async function findAuthorizedEmail(email: string): Promise<AuthorizedEmai
   const db = getFirestoreClient();
   if (db) {
     try {
+      await ensureFirebaseSession();
       const snap = await getDoc(doc(db, 'authorized_emails', clean));
       if (snap.exists()) {
         const remote = { ...(snap.data() as AuthorizedEmailEntry), email: clean };
@@ -190,10 +199,7 @@ export async function requestAccessRegistration(input: {
     return existing;
   }
 
-  const auth = getFirebaseAuthClient();
-  if (auth && !auth.currentUser) {
-    await signInAnonymously(auth).catch(() => undefined);
-  }
+  await ensureFirebaseSession();
 
   const entry: AuthorizedEmailEntry = {
     email: cleanEmail,
