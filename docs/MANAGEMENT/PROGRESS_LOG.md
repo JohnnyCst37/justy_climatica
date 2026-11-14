@@ -1,5 +1,8 @@
 # 📜 PROGRESS_LOG — Diário de Engenharia (justy_climatica)
 
+## [14/11/2026] Grade Completa 6º ao 9º Ano (A, B, C e D) & Atalhos de Auto-Cadastro
+- **Grade Escolar Completa (`accessControlService.ts`, `StandaloneSubmissionPage.tsx`, `SubmitWorkForm.tsx`, `CreateCommunityModal.tsx`):** Expandido `SCHOOL_CLASS_OPTIONS` para todas as 16 turmas do **6º ao 9º Ano (A, B, C e D)**, adicionados atalhos em 1 clique por ano escolar (`+ 6º Ano (A-D)` ao `+ 9º Ano (A-D)`) no auto-cadastro docente (`StandaloneSubmissionPage.tsx`) e seletor dropdown rápido `Todas (6º–9º)...` nos formulários de Passo 1 e Passo 2.
+
 ## [14/11/2026] Hotfix Vercel Firebase SDK + Multi-Turmas (9º A, B, C, D) & Vídeos do YouTube Selecionados
 - **Correção Crítica de Produção no Vercel (`package.json`, `vite.config.ts`, `firebaseClient.ts`):** Alinhadas as versões de `firebase` (`^13.3.0`), `firebase-admin` (`^14.5.1`), `dotenv` (`^18.0.10`) e `zod` (`^4.6.7`) com o `package-lock.json` para eliminar a instalação duplicada de `@firebase/app` (`Component auth has not been registered yet` / `Service firestore is not available`), adicionada regra `resolve.dedupe` no Vite e proteção `try/catch` nos clients Firebase.
 - **Suporte Multi-Turmas para Super Admin e Professores (`accessControlService.ts`, `StandaloneSubmissionPage.tsx`, `StaffEmailManagerModal.tsx`, `SubmitWorkForm.tsx`, `CreateCommunityModal.tsx`):** Atualizado o perfil seed de `fernandesjohnnys@gmail.com` com as turmas `9º Ano A, 9º Ano B, 9º Ano C, 9º Ano D`, adicionados placeholders dinâmicos para múltiplas turmas, pílulas de seleção em 1 clique e `<datalist>` de turmas da escola nos formulários de Passo 1 e Passo 2.

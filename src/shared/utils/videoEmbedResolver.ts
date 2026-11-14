@@ -30,3 +30,4 @@ export function isDirectVideoFileUrl(rawUrl: string): boolean {
     rawUrl.includes('firebasestorage.googleapis.com')
   );
 }
+

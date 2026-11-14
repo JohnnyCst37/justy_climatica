@@ -8,8 +8,11 @@ import { useCommunitiesList } from '../../../shared/hooks/useCommunitiesList';
 import { useAuthSession } from '../../auth/hooks/useAuthSession';
 import {
   ROLE_LABELS,
+  SCHOOL_CLASS_OPTIONS,
+  SCHOOL_GRADE_GROUPS,
   canAccessSubmissionPortal,
   isStaffRole,
+  mergeClassSelection,
   parseTeacherClasses,
 } from '../../auth/services/accessControlService';
 import { StaffEmailManagerModal } from '../../auth/components/StaffEmailManagerModal';
@@ -232,16 +235,41 @@ export const StandaloneSubmissionPage: React.FC = () => {
                         <option value="lider">Aluno(a) Líder de Grupo</option>
                       </select>
                       <input
+                        list="register-turmas"
                         value={regClassGroup}
                         onChange={(e) => setRegClassGroup(e.target.value)}
                         placeholder={
                           regRole === 'lider'
-                            ? 'Sua Turma (ex: 9º Ano B)'
-                            : 'Turmas que leciona (opcional, ex: 9º A, 9º B, 9º C, 9º D)'
+                            ? 'Sua Turma (ex: 6º Ano A .. 9º Ano D)'
+                            : 'Turmas que leciona (opcional, 6º ao 9º Ano)'
                         }
                         className="px-3 py-2 text-xs border border-slate-300 rounded-xl"
                       />
                     </div>
+                    <datalist id="register-turmas">
+                      {SCHOOL_CLASS_OPTIONS.map((turma) => (
+                        <option key={turma} value={turma} />
+                      ))}
+                    </datalist>
+                    {regRole !== 'lider' && (
+                      <div className="flex flex-wrap items-center gap-1">
+                        <span className="text-[10px] font-bold text-slate-500 mr-1">
+                          Atalhos (6º ao 9º):
+                        </span>
+                        {SCHOOL_GRADE_GROUPS.map((grp) => (
+                          <button
+                            key={grp.label}
+                            type="button"
+                            onClick={() =>
+                              setRegClassGroup((prev) => mergeClassSelection(prev, grp.value))
+                            }
+                            className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-emerald-100 text-slate-700 hover:text-emerald-900 text-[10px] font-bold transition"
+                          >
+                            {grp.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                     <button type="submit" disabled={submittingAuth} className="w-full py-2.5 rounded-xl bg-emerald-800 hover:bg-emerald-700 disabled:opacity-60 text-white text-xs font-extrabold flex items-center justify-center gap-2">
                       <UserPlus size={15} /> {submittingAuth ? 'Enviando...' : 'Concluir Cadastro e Solicitar Aprovação'}
                     </button>

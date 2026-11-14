@@ -166,6 +166,21 @@ export const SubmitWorkForm: React.FC<SubmitWorkFormProps> = ({
               {turma}
             </button>
           ))}
+          <select
+            aria-label="Selecionar qualquer turma do 6º ao 9º Ano"
+            value={SCHOOL_CLASS_OPTIONS.includes(classGroup) ? classGroup : ''}
+            onChange={(e) => {
+              if (e.target.value) setClassGroup(e.target.value);
+            }}
+            className="px-2 py-0.5 rounded-md text-[11px] font-bold border border-slate-200 bg-white text-slate-700"
+          >
+            <option value="">Todas (6º–9º)...</option>
+            {SCHOOL_CLASS_OPTIONS.map((turma) => (
+              <option key={turma} value={turma}>
+                {turma}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="grid grid-cols-2 gap-2">

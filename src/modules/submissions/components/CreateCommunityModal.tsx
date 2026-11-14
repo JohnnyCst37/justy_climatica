@@ -177,6 +177,21 @@ export const CreateCommunityModal: React.FC<CreateCommunityModalProps> = ({
                   {turma}
                 </button>
               ))}
+              <select
+                aria-label="Selecionar qualquer turma do 6º ao 9º Ano"
+                value={SCHOOL_CLASS_OPTIONS.includes(serie) ? serie : ''}
+                onChange={(e) => {
+                  if (e.target.value) setSerie(e.target.value);
+                }}
+                className="px-2 py-0.5 rounded-md text-[11px] font-bold border border-slate-200 bg-white text-slate-700"
+              >
+                <option value="">Todas (6º–9º)...</option>
+                {SCHOOL_CLASS_OPTIONS.map((turma) => (
+                  <option key={turma} value={turma}>
+                    {turma}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">

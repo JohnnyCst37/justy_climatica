@@ -29,18 +29,42 @@ export const ROLE_LABELS: Record<AuthorizedEmailRole, string> = {
 };
 
 export const SCHOOL_CLASS_OPTIONS = [
+  '6º Ano A',
+  '6º Ano B',
+  '6º Ano C',
+  '6º Ano D',
+  '7º Ano A',
+  '7º Ano B',
+  '7º Ano C',
+  '7º Ano D',
+  '8º Ano A',
+  '8º Ano B',
+  '8º Ano C',
+  '8º Ano D',
   '9º Ano A',
   '9º Ano B',
   '9º Ano C',
   '9º Ano D',
-  '8º Ano A',
-  '8º Ano B',
-  '8º Ano C',
-  '7º Ano A',
-  '7º Ano B',
-  '6º Ano A',
-  '6º Ano B',
 ];
+
+export const SCHOOL_GRADE_GROUPS: Array<{ label: string; value: string }> = [
+  { label: '+ 6º Ano (A-D)', value: '6º Ano A, 6º Ano B, 6º Ano C, 6º Ano D' },
+  { label: '+ 7º Ano (A-D)', value: '7º Ano A, 7º Ano B, 7º Ano C, 7º Ano D' },
+  { label: '+ 8º Ano (A-D)', value: '8º Ano A, 8º Ano B, 8º Ano C, 8º Ano D' },
+  { label: '+ 9º Ano (A-D)', value: '9º Ano A, 9º Ano B, 9º Ano C, 9º Ano D' },
+];
+
+export function mergeClassSelection(current: string, addition: string): string {
+  const existing = current
+    .split(/[,;/]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const incoming = addition
+    .split(/[,;/]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+  return Array.from(new Set([...existing, ...incoming])).join(', ');
+}
 
 const DEFAULT_CLASS_PILLS = ['9º Ano A', '9º Ano B', '9º Ano C', '9º Ano D'];
 
