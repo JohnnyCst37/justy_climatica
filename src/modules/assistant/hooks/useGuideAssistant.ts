@@ -8,16 +8,15 @@ import type {
 } from '../../../shared/types/domain';
 import {
   askGuideAssistant,
-  discoverCommunitiesFromWeb,
   requestEphemeralLiveToken,
   requestNarrationAudio,
 } from '../services/assistantApi';
 import { LiveVoiceSession } from '../services/liveVoiceClient';
 import {
   buildContextualGreeting,
-  playBrowserSpeech,
   stopAllAudio,
 } from '../services/soundNarrator';
+import { lyriaEngine } from '../../audio/services/lyriaSoundscapeEngine';
 
 export function useGuideAssistant(params: {
   community: CommunityNode | null;
@@ -25,17 +24,20 @@ export function useGuideAssistant(params: {
   stepIndex: number;
   progress: JourneyProgress;
   user: UserProfile | null;
-  onDiscoveredCommunities: (items: CommunityNode[]) => void;
   onRequestLogin: () => void;
 }) {
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [loadingReply, setLoadingReply] = useState(false);
-  const [discoveringWeb, setDiscoveringWeb] = useState(false);
   const [voiceStatus, setVoiceStatus] = useState<'idle' | 'connecting' | 'live' | 'speaking'>('idle');
   const [isAudioLoading, setIsAudioLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const liveRef = useRef<LiveVoiceSession | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const speechSeqRef = useRef(0);
+
+  useEffect(() => {
+    lyriaEngine.setVoiceDucking(voiceStatus === 'speaking' || voiceStatus === 'live');
+  }, [voiceStatus]);
 
   useEffect(() => {
     if (!params.community) return;
@@ -46,14 +48,14 @@ export function useGuideAssistant(params: {
         text: buildContextualGreeting(params.community, params.activeJourney, params.stepIndex),
         prompts: [
           'Explique este passo de um jeito bem simples',
-          'Buscar comunidades anônimas parecidas na web',
+          'Como nossa escola pode ajudar essa comunidade?',
         ],
       },
     ]);
   }, [params.community?.id, params.activeJourney, params.stepIndex]);
 
   const sendMessage = useCallback(
-    async (text: string, useWebSearch = false) => {
+    async (text: string) => {
       if (!params.community || !text.trim()) return;
       if (!params.user) {
         params.onRequestLogin();
@@ -72,7 +74,7 @@ export function useGuideAssistant(params: {
           stepIndex: params.stepIndex,
           progress: params.progress,
           userMessage: text.trim(),
-          useWebSearch,
+          visitorAge: params.user.age,
           sessionToken: params.user.sessionToken,
         });
         setMessages((prev) => [
@@ -97,6 +99,7 @@ export function useGuideAssistant(params: {
   );
 
   const stopAudio = useCallback(() => {
+    speechSeqRef.current += 1;
     stopAllAudio(audioRef.current);
     setVoiceStatus('idle');
     setIsAudioLoading(false);
@@ -104,6 +107,7 @@ export function useGuideAssistant(params: {
 
   const speakText = useCallback(
     async (text: string) => {
+      const seq = ++speechSeqRef.current;
       setErrorMsg(null);
       setIsAudioLoading(true);
       setVoiceStatus('speaking');
@@ -112,36 +116,34 @@ export function useGuideAssistant(params: {
       try {
         const url = await requestNarrationAudio({
           texto: text,
-          slideId: `${params.community?.id || 'guide'}-${params.activeJourney}-${params.stepIndex}`,
+          slideId: `${params.community?.id || 'guide'}-${params.activeJourney}-${params.stepIndex}-${text.length}`,
           voz: 'Aoede',
           sessionToken: params.user?.sessionToken,
         });
 
+        if (seq !== speechSeqRef.current) return;
+
         setIsAudioLoading(false);
+        stopAllAudio(audioRef.current);
         if (!audioRef.current) audioRef.current = new Audio();
         audioRef.current.src = url;
         audioRef.current.onended = () => {
+          if (seq !== speechSeqRef.current) return;
           setVoiceStatus('idle');
           setIsAudioLoading(false);
         };
         audioRef.current.onerror = () => {
+          if (seq !== speechSeqRef.current) return;
           setVoiceStatus('idle');
           setIsAudioLoading(false);
         };
         await audioRef.current.play();
-        return;
       } catch {
+        if (seq !== speechSeqRef.current) return;
         setIsAudioLoading(false);
-        setErrorMsg(
-          'Usando voz local do navegador. Para ouvir a voz HD do Gemini, configure GEMINI_API_KEY no .env e rode via "npm run dev".'
-        );
+        setVoiceStatus('idle');
+        setErrorMsg('Aguarde um instante para a narração HD do Guia.');
       }
-
-      playBrowserSpeech(
-        text,
-        () => setVoiceStatus('idle'),
-        () => setVoiceStatus('idle')
-      );
     },
     [params.user, params.community?.id, params.activeJourney, params.stepIndex]
   );
@@ -203,39 +205,9 @@ export function useGuideAssistant(params: {
     }
   }, [voiceStatus, params]);
 
-  const searchAnonymousCommunities = useCallback(async () => {
-    if (!params.user) {
-      params.onRequestLogin();
-      return;
-    }
-    setErrorMsg(null);
-    setDiscoveringWeb(true);
-    try {
-      const found = await discoverCommunitiesFromWeb({
-        query: 'comunidades tradicionais afetadas por secas ou queimadas sem visibilidade Mato Grosso',
-        biome: params.community?.bioma || 'Todos',
-        sessionToken: params.user.sessionToken,
-      });
-      params.onDiscoveredCommunities(found);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `web-${Date.now()}`,
-          sender: 'guide',
-          text: `Encontrei ${found.length} comunidades na web que precisam de vozes e coloquei no mapa com o marcador rosa "W".`,
-        },
-      ]);
-    } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Falha na busca web.');
-    } finally {
-      setDiscoveringWeb(false);
-    }
-  }, [params]);
-
   return {
     messages,
     loadingReply,
-    discoveringWeb,
     voiceStatus,
     isPlayingAudio: voiceStatus === 'speaking' || voiceStatus === 'live',
     isAudioLoading,
@@ -245,6 +217,5 @@ export function useGuideAssistant(params: {
     toggleStoryAudio,
     stopAudio,
     toggleLiveVoice,
-    searchAnonymousCommunities,
   };
 }

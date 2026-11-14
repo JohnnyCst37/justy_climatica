@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -11,7 +11,7 @@ import {
   Sparkles,
   X,
 } from 'lucide-react';
-import type { CommunityNode } from '../../../shared/types/domain';
+import type { CommunityNode, SchoolWork } from '../../../shared/types/domain';
 import {
   getCommunityMediaSlides,
   type CommunityMediaSlide,
@@ -19,13 +19,24 @@ import {
 
 interface HeroMediaBannerProps {
   community: CommunityNode;
+  works?: SchoolWork[];
   isPlayingAudio: boolean;
   isAudioLoading: boolean;
   onToggleAudio: () => void;
 }
 
+function isDirectVideoUrl(url: string): boolean {
+  return (
+    url.startsWith('blob:') ||
+    url.startsWith('data:video/') ||
+    /\.(mp4|webm|mov)(\?.*)?$/i.test(url) ||
+    url.includes('firebasestorage.googleapis.com')
+  );
+}
+
 export const HeroMediaBanner: React.FC<HeroMediaBannerProps> = ({
   community,
+  works = [],
   isPlayingAudio,
   isAudioLoading,
   onToggleAudio,
@@ -33,12 +44,28 @@ export const HeroMediaBanner: React.FC<HeroMediaBannerProps> = ({
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
 
-  const slides = getCommunityMediaSlides(
+  useEffect(() => {
+    setCurrentSlideIndex(0);
+  }, [community.id]);
+
+  const baseSlides = getCommunityMediaSlides(
     community.id,
     community.infografico.url,
     community.videoEquipe.url
   );
 
+  const studentSlides: CommunityMediaSlide[] = works
+    .filter((w) => !w.id.startsWith('seed-') && Boolean(w.mediaUrl))
+    .map((w) => ({
+      id: `work-${w.id}`,
+      type: w.workType === 'video' ? 'video' : w.workType === 'infografico' ? 'infographic' : 'photo',
+      title: w.title,
+      subtitle: `${w.schoolName} · ${w.classGroup}`,
+      url: w.mediaUrl,
+      caption: w.description,
+    }));
+
+  const slides = [...baseSlides, ...studentSlides];
   const activeSlide: CommunityMediaSlide = slides[currentSlideIndex] || slides[0];
 
   const prevSlide = () => {
@@ -50,12 +77,21 @@ export const HeroMediaBanner: React.FC<HeroMediaBannerProps> = ({
   };
 
   const isVideo = activeSlide.type === 'video' && Boolean(activeSlide.url);
+  const isDirectVideo = isVideo && isDirectVideoUrl(activeSlide.url);
 
   return (
     <div className="relative w-full rounded-2xl overflow-hidden bg-slate-950 border border-slate-200/80 shadow-md transition-all">
       {/* Janela de Mídia (16:10 / Altura Nobre) */}
       <div className="relative w-full aspect-[16/10] sm:aspect-[16/9] max-h-[360px] bg-slate-950 flex items-center justify-center overflow-hidden">
-        {isVideo ? (
+        {isVideo && isDirectVideo ? (
+          <video
+            src={activeSlide.url}
+            controls
+            playsInline
+            preload="metadata"
+            className="w-full h-full object-contain bg-black"
+          />
+        ) : isVideo ? (
           <iframe
             src={activeSlide.url}
             title={activeSlide.title}

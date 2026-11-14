@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { CommunityNode, SchoolWork, UserProfile } from '../../../shared/types/domain';
+import { isStaffRole } from '../../auth/services/accessControlService';
 import {
   approveSchoolWork,
   fetchCommunityWorks,
@@ -17,7 +18,7 @@ export function useSchoolWorks(community: CommunityNode | null, user: UserProfil
       const list = await fetchCommunityWorks(
         community,
         user?.uid,
-        user?.role === 'professor'
+        isStaffRole(user?.role)
       );
       setWorks(list);
     } finally {
@@ -37,8 +38,10 @@ export function useSchoolWorks(community: CommunityNode | null, user: UserProfil
       workType: SchoolWork['workType'];
       description: string;
       videoUrl?: string;
+      videoFile?: File;
       imageFileBase64?: string;
       imageMimeType?: 'image/png' | 'image/jpeg' | 'image/webp';
+      onUploadProgress?: (pct: number) => void;
     }) => {
       if (!community || !user) return null;
       const created = await submitSchoolWork({
@@ -47,7 +50,7 @@ export function useSchoolWorks(community: CommunityNode | null, user: UserProfil
         authorUid: user.uid,
         authorLabel: user.nickname,
         sessionToken: user.sessionToken,
-        autoApprove: user.role === 'professor',
+        autoApprove: isStaffRole(user.role),
       });
       setWorks((prev) => [created, ...prev]);
       return created;

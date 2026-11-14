@@ -1,7 +1,7 @@
 # 🧠 Scorecard Arquitetural de IA, Coesão & Escalabilidade (justy_climatica)
 
 > **Gerado por:** JF Architecture Sentinel v2.0 (Determinístico · Custo R$ 0,00 de Tokens)  
-> **Data:** 12/11/2026, 18:47:26  
+> **Data:** 14/11/2026, 08:56:51  
 > **Stack Detectada:** Vite (^6.2.0) · React (^19.2.4) · Express (^4.21.2) · Firebase (^12.6.0) · @google/genai (^3.1.0)
 
 ---
@@ -37,15 +37,14 @@
 - **Mistura `M1 (JSX+DB)`:** 0 | **Mistura `M2 (JSX+AI)`:** 0 | **God Mixing `M3 (>=3 camadas)`:** 1
 - **Acúmulo de Hooks (`>= 8`):** 2
 - **Duplicação SSOT (`M5`):** Nenhuma detectada
-- **Status da Catraca (Ratchet):** 🔴 4 novo(s) bloqueio(s), 0 regressão(ões)
+- **Status da Catraca (Ratchet):** 🔴 3 novo(s) bloqueio(s), 0 regressão(ões)
 
 | Arquivo | Papel | SLOC | Hooks (State/Effect) | Misturas |
 |---|---|---:|:---:|:---|
 | `src/shared/data/communitiesPart1.ts` | SERVICE_API | **507** (teto: 420) | 0 (0S/0E) | — |
 | `src/shared/data/communitiesPart2.ts` | SERVICE_API | **504** (teto: 420) | 0 (0S/0E) | — |
 | `src/modules/map/components/MapCanvas.tsx` | UI_COMPONENT | **282** (teto: 380) | 12 (2S/3E) | M4 |
-| `src/modules/assistant/hooks/useGuideAssistant.ts` | HOOK | **233** (teto: 250) | 10 (3S/1E) | — |
-| `src/modules/submissions/components/SubmitWorkForm.tsx` | UI_COMPONENT | **115** (teto: 380) | 6 (6S/0E) | M3 |
+| `src/modules/submissions/components/SubmitWorkForm.tsx` | UI_COMPONENT | **187** (teto: 380) | 6 (6S/0E) | M3 |
 
 ---
 

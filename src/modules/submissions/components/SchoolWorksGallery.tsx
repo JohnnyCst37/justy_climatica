@@ -1,5 +1,14 @@
-import React from 'react';
-import { CheckCircle2, Clock, Presentation, School, Video, Image as ImageIcon } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+  CheckCircle2,
+  Clock,
+  Image as ImageIcon,
+  Maximize2,
+  Presentation,
+  School,
+  Video,
+  X,
+} from 'lucide-react';
 import type { SchoolWork } from '../../../shared/types/domain';
 
 interface SchoolWorksGalleryProps {
@@ -15,7 +24,17 @@ function getEmbedUrl(url: string): string | null {
   if (yt?.[1]) return `https://www.youtube.com/embed/${yt[1]}?rel=0`;
   const drive = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
   if (drive?.[1]) return `https://drive.google.com/file/d/${drive[1]}/preview`;
-  return url;
+  return null;
+}
+
+function isDirectVideoFile(url: string): boolean {
+  if (!url) return false;
+  return (
+    url.startsWith('blob:') ||
+    url.startsWith('data:video/') ||
+    /\.(mp4|webm|mov)(\?.*)?$/i.test(url) ||
+    url.includes('firebasestorage.googleapis.com')
+  );
 }
 
 function getTypeLabel(type: SchoolWork['workType']): string {
@@ -37,67 +56,148 @@ export const SchoolWorksGallery: React.FC<SchoolWorksGalleryProps> = ({
   isProfessor,
   onApprove,
 }) => {
+  const [filter, setFilter] = useState<'all' | 'photos' | 'videos'>('all');
+  const [zoomImage, setZoomImage] = useState<string | null>(null);
+
+  const filtered = works.filter((w) => {
+    if (filter === 'videos') return w.workType === 'video';
+    if (filter === 'photos') return w.workType !== 'video';
+    return true;
+  });
+
   return (
     <div className="space-y-3">
-      <div className="bg-violet-50/70 border border-violet-200 rounded-xl p-3">
-        <div className="text-xs font-bold text-violet-950 flex items-center gap-1.5">
-          <School size={14} className="text-violet-700" />
-          Que escola está falando hoje sobre {communityTitle}?
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+          <School size={14} className="text-emerald-700" />
+          <span>Galeria de Fotos & Vídeos · {communityTitle}</span>
         </div>
-        <p className="text-[11px] text-slate-600 mt-0.5">
-          Apresentações em slides, vídeos, infográficos e fotos produzidos por estudantes em defesa deste território.
-        </p>
+
+        <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg text-[10.5px] font-semibold">
+          {(
+            [
+              { key: 'all', label: 'Todos' },
+              { key: 'photos', label: 'Fotos & Slides' },
+              { key: 'videos', label: 'Vídeos' },
+            ] as const
+          ).map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setFilter(tab.key)}
+              className={`px-2 py-1 rounded-md transition-colors ${
+                filter === tab.key ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className="space-y-2.5">
-        {works.map((work) => {
-          const embed = work.workType === 'video' ? getEmbedUrl(work.mediaUrl) : null;
-          return (
-            <div key={work.id} className="bg-white border border-slate-200 rounded-xl p-3 space-y-2">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <span className="text-[10.5px] font-bold text-violet-800 uppercase tracking-wide flex items-center gap-1">
-                    {work.workType === 'slide_powerpoint' && <Presentation size={12} />}
-                    {work.workType === 'video' && <Video size={12} />}
-                    {(work.workType === 'infografico' || work.workType === 'foto_campo') && <ImageIcon size={12} />}
-                    {work.schoolName} · {work.classGroup} · {getTypeLabel(work.workType)}
-                  </span>
-                  <h4 className="text-xs font-bold text-slate-900 mt-0.5">{work.title}</h4>
+      {filtered.length === 0 ? (
+        <p className="text-xs text-slate-500 py-4 text-center bg-slate-50 rounded-xl border border-slate-200">
+          Nenhum item nesta categoria ainda. Use o próximo passo para enviar o primeiro!
+        </p>
+      ) : (
+        <div className="space-y-2.5">
+          {filtered.map((work) => {
+            const embed = work.workType === 'video' ? getEmbedUrl(work.mediaUrl) : null;
+            const directVideo = work.workType === 'video' && isDirectVideoFile(work.mediaUrl);
+
+            return (
+              <div key={work.id} className="bg-white border border-slate-200 rounded-xl p-3 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <span className="text-[10.5px] font-bold text-emerald-800 uppercase tracking-wide flex items-center gap-1">
+                      {work.workType === 'slide_powerpoint' && <Presentation size={12} />}
+                      {work.workType === 'video' && <Video size={12} />}
+                      {(work.workType === 'infografico' || work.workType === 'foto_campo') && (
+                        <ImageIcon size={12} />
+                      )}
+                      {work.schoolName} · {work.classGroup} · {getTypeLabel(work.workType)}
+                    </span>
+                    <h4 className="text-xs font-bold text-slate-900 mt-0.5">{work.title}</h4>
+                  </div>
+
+                  {work.status === 'pending' && (
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 flex items-center gap-1 shrink-0">
+                      <Clock size={10} /> Aguardando
+                    </span>
+                  )}
                 </div>
 
-                {work.status === 'pending' && (
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 flex items-center gap-1 shrink-0">
-                    <Clock size={10} /> Aguardando
-                  </span>
+                {work.workType === 'video' && directVideo ? (
+                  <div className="rounded-lg overflow-hidden aspect-video bg-slate-950 border border-slate-200">
+                    <video
+                      src={work.mediaUrl}
+                      controls
+                      playsInline
+                      preload="metadata"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                ) : work.workType === 'video' && embed ? (
+                  <div className="rounded-lg overflow-hidden aspect-video bg-slate-900 border border-slate-200">
+                    <iframe
+                      src={embed}
+                      title={work.title}
+                      className="w-full h-full border-0"
+                      allowFullScreen
+                    />
+                  </div>
+                ) : work.mediaUrl ? (
+                  <div className="relative group">
+                    <img
+                      src={work.mediaUrl}
+                      alt={work.title}
+                      className="w-full h-40 object-cover rounded-lg border border-slate-200"
+                    />
+                    <button
+                      onClick={() => setZoomImage(work.mediaUrl)}
+                      className="absolute top-2 right-2 p-1.5 rounded-lg bg-slate-900/75 text-white opacity-90 hover:opacity-100"
+                      title="Ampliar imagem"
+                    >
+                      <Maximize2 size={12} />
+                    </button>
+                  </div>
+                ) : null}
+
+                <p className="text-[11px] text-slate-600 leading-snug">{work.description}</p>
+
+                {isProfessor && work.status === 'pending' && (
+                  <button
+                    onClick={() => onApprove(work.id)}
+                    className="px-2.5 py-1 rounded-lg bg-emerald-800 hover:bg-emerald-700 text-white text-[11px] font-semibold flex items-center gap-1"
+                  >
+                    <CheckCircle2 size={12} /> Aprovar para Mostra
+                  </button>
                 )}
               </div>
+            );
+          })}
+        </div>
+      )}
 
-              {work.workType === 'video' && embed ? (
-                <div className="rounded-lg overflow-hidden aspect-video bg-slate-900 border border-slate-200">
-                  <iframe src={embed} title={work.title} className="w-full h-full border-0" allowFullScreen />
-                </div>
-              ) : work.mediaUrl ? (
-                <img
-                  src={work.mediaUrl}
-                  alt={work.title}
-                  className="w-full h-36 object-cover rounded-lg border border-slate-200"
-                />
-              ) : null}
-
-              <p className="text-[11px] text-slate-600 leading-snug">{work.description}</p>
-
-              {isProfessor && work.status === 'pending' && (
-                <button
-                  onClick={() => onApprove(work.id)}
-                  className="px-2.5 py-1 rounded-lg bg-emerald-800 hover:bg-emerald-700 text-white text-[11px] font-semibold flex items-center gap-1"
-                >
-                  <CheckCircle2 size={12} /> Aprovar para Mostra
-                </button>
-              )}
-            </div>
-          );
-        })}
-      </div>
+      {zoomImage && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-xs flex items-center justify-center p-4"
+          onClick={() => setZoomImage(null)}
+        >
+          <div className="relative max-w-4xl w-full" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setZoomImage(null)}
+              className="absolute top-3 right-3 z-10 p-2 rounded-xl bg-slate-900/80 text-white"
+            >
+              <X size={18} />
+            </button>
+            <img
+              src={zoomImage}
+              alt="Imagem ampliada"
+              className="w-full max-h-[85vh] object-contain rounded-xl bg-white p-1"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

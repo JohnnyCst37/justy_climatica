@@ -1,0 +1,411 @@
+import React, { useEffect, useState } from 'react';
+import {
+  Award,
+  CheckCircle2,
+  Images,
+  Map as MapIcon,
+  Mic,
+  Search,
+  Send,
+  Sparkles,
+  Trees,
+  Users,
+  Video,
+  Volume2,
+  Scale,
+} from 'lucide-react';
+import type {
+  AssistantMessage,
+  CommunityNode,
+  SchoolWork,
+  ThemeSessionKey,
+} from '../../../shared/types/domain';
+import { resolveBiomePalette } from '../../../shared/utils/biomeThemePalettes';
+import { buildAgeAdaptedOverview } from '../../../shared/utils/ageNarrativeAdapter';
+import { getCommunityMediaSlides } from '../../../shared/data/communityMediaCatalog';
+import { MapCanvas } from '../../map/components/MapCanvas';
+import { HeroMediaBanner } from './HeroMediaBanner';
+import { lyriaEngine } from '../../audio/services/lyriaSoundscapeEngine';
+
+interface GoogleStyleSearchStageProps {
+  communities: CommunityNode[];
+  activeCommunity: CommunityNode;
+  activeTheme: ThemeSessionKey;
+  visitorAge?: number;
+  works: SchoolWork[];
+  messages: AssistantMessage[];
+  loadingReply: boolean;
+  isPlayingAudio: boolean;
+  isAudioLoading: boolean;
+  voiceStatus: 'idle' | 'connecting' | 'live' | 'speaking';
+  onSelectCommunity: (id: string) => void;
+  onSelectTheme: (theme: ThemeSessionKey) => void;
+  onSpeakText: (text: string) => void;
+  onToggleStoryAudio: (customText?: string) => void;
+  onSendQuestion: (text: string) => void;
+  onToggleLiveVoice: () => void;
+  onOpenQuiz: () => void;
+}
+
+const THEME_BUTTONS: Array<{ key: ThemeSessionKey; label: string; icon: React.ReactNode }> = [
+  { key: 'justica', label: 'Justiça Climática', icon: <Scale size={15} /> },
+  { key: 'comunidades', label: 'Comunidades', icon: <Users size={15} /> },
+  { key: 'biodiversidade', label: 'Biodiversidade', icon: <Trees size={15} /> },
+];
+
+const PRAISE_BEFORE_VIDEO =
+  'Parabéns! Você está apoiando e dando voz a quem mais protege a natureza e quem mais precisa ser ouvido! Hoje você fez a diferença, continue assim!';
+
+export const GoogleStyleSearchStage: React.FC<GoogleStyleSearchStageProps> = ({
+  communities,
+  activeCommunity,
+  activeTheme,
+  visitorAge,
+  works,
+  messages,
+  loadingReply,
+  isPlayingAudio,
+  isAudioLoading,
+  voiceStatus,
+  onSelectCommunity,
+  onSelectTheme,
+  onSpeakText,
+  onToggleStoryAudio,
+  onSendQuestion,
+  onToggleLiveVoice,
+  onOpenQuiz,
+}) => {
+  const [stageMode, setStageMode] = useState<'map' | 'slides'>('map');
+  const [videoChoice, setVideoChoice] = useState<'pending' | 'yes' | 'no'>('pending');
+  const [freeQuery, setFreeQuery] = useState('');
+
+  const palette = resolveBiomePalette(activeCommunity, activeTheme);
+  const overview = buildAgeAdaptedOverview(activeCommunity, activeTheme, visitorAge);
+  const latestGuideMsg = [...messages].reverse().find((m) => m.sender === 'guide');
+
+  // Sincroniza paleta sonora do Lyria ao trocar comunidade ou tema
+  useEffect(() => {
+    lyriaEngine.setThemeAmbience(palette.soundPreset);
+  }, [palette.soundPreset]);
+
+  // Reinicia convite de vídeo ao trocar de comunidade
+  useEffect(() => {
+    setVideoChoice('pending');
+  }, [activeCommunity.id]);
+
+  const handleChooseTheme = (theme: ThemeSessionKey) => {
+    onSelectTheme(theme);
+    setStageMode('slides');
+    setVideoChoice('pending');
+    lyriaEngine.playTransitionChime();
+    if (theme === 'justica') {
+      lyriaEngine.setThemeAmbience('drama');
+    } else {
+      lyriaEngine.setThemeAmbience(palette.soundPreset);
+    }
+    const nextOverview = buildAgeAdaptedOverview(activeCommunity, theme, visitorAge);
+    onSpeakText(nextOverview.spokenScript);
+  };
+
+  const handleChoosePinOrCard = (community: CommunityNode) => {
+    onSelectCommunity(community.id);
+    setStageMode('slides');
+    setVideoChoice('pending');
+    lyriaEngine.playTransitionChime();
+    const nextOverview = buildAgeAdaptedOverview(community, activeTheme, visitorAge);
+    onSpeakText(nextOverview.spokenScript);
+  };
+
+  const handleAcceptVideo = () => {
+    setVideoChoice('yes');
+    lyriaEngine.setThemeAmbience('buritis');
+    onSpeakText(PRAISE_BEFORE_VIDEO);
+  };
+
+  const handleAskSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!freeQuery.trim()) return;
+    onSendQuestion(freeQuery);
+    setFreeQuery('');
+  };
+
+  const videoWork = works.find((w) => w.workType === 'video' && Boolean(w.mediaUrl));
+  const sessionVideoUrl = videoWork?.mediaUrl || activeCommunity.videoEquipe.url;
+
+  return (
+    <div className={`min-h-full transition-colors duration-500 ${palette.pageBg} pb-12`}>
+      {/* Topo Estilo Barra de Busca Google + 3 Botões Temáticos */}
+      <div className={`border-b ${palette.cardBorder} ${palette.headerBg} px-4 sm:px-8 py-4 transition-colors duration-500`}>
+        <div className="max-w-6xl mx-auto space-y-3">
+          <div className="flex flex-col md:flex-row md:items-center gap-3">
+            <div className="flex-1 bg-white rounded-full border border-slate-300/90 shadow-xs px-4 py-2.5 flex items-center gap-3">
+              <Search size={17} className="text-slate-400 shrink-0" />
+              <span className="text-xs sm:text-sm font-semibold text-slate-800 truncate flex-1">
+                {overview.searchQueryTitle}
+              </span>
+              <button
+                type="button"
+                onClick={onToggleLiveVoice}
+                className={`p-1.5 rounded-full transition-colors ${
+                  voiceStatus === 'live' ? 'bg-rose-600 text-white animate-pulse' : 'text-emerald-800 hover:bg-slate-100'
+                }`}
+                title="Conversar por voz ao vivo com o Guia"
+              >
+                <Mic size={16} />
+              </button>
+            </div>
+
+            <span className={`px-3 py-1.5 rounded-full text-[11px] font-bold self-start md:self-auto ${palette.badgeBg} ${palette.badgeText}`}>
+              {palette.label}
+            </span>
+          </div>
+
+          {/* 3 Botões Temáticos Principais */}
+          <div className="flex flex-wrap items-center gap-2">
+            {THEME_BUTTONS.map((btn) => {
+              const active = activeTheme === btn.key;
+              return (
+                <button
+                  key={btn.key}
+                  onClick={() => handleChooseTheme(btn.key)}
+                  className={`px-4 py-2 rounded-full text-xs sm:text-sm font-extrabold flex items-center gap-2 transition-all shadow-2xs ${
+                    active
+                      ? `${palette.accentBg} text-white scale-[1.02]`
+                      : 'bg-white hover:bg-slate-50 text-slate-800 border border-slate-300/80'
+                  }`}
+                >
+                  {btn.icon}
+                  <span>{btn.label}</span>
+                </button>
+              );
+            })}
+
+            <div className="ml-auto flex items-center gap-1.5 bg-white/80 p-1 rounded-full border border-slate-200">
+              <button
+                onClick={() => setStageMode('map')}
+                className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 transition-colors ${
+                  stageMode === 'map' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <MapIcon size={13} /> Mapa de MT
+              </button>
+              <button
+                onClick={() => setStageMode('slides')}
+                className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 transition-colors ${
+                  stageMode === 'slides' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Images size={13} /> Slides Visuais
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Corpo Principal em 2 Colunas (Inspirado no Google AI Overview) */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-8 pt-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Coluna Esquerda (~65%): Mapa/Slides Sincronizados + Síntese IA Grifada + Vídeo & Quiz */}
+        <div className="lg:col-span-8 space-y-5">
+          {/* Bloco Visual Protagonista: Mapa com Pinos OU Carrossel de Slides */}
+          <div className="rounded-3xl overflow-hidden border border-slate-200/90 bg-white shadow-sm">
+            {stageMode === 'map' ? (
+              <div className="h-[340px] sm:h-[400px] w-full relative">
+                <MapCanvas
+                  itens={communities}
+                  itemSelecionadoId={activeCommunity.id}
+                  onItemClick={handleChoosePinOrCard}
+                  onStartGuideClick={() => setStageMode('slides')}
+                />
+              </div>
+            ) : (
+              <HeroMediaBanner
+                community={activeCommunity}
+                works={works}
+                isPlayingAudio={isPlayingAudio}
+                isAudioLoading={isAudioLoading}
+                onToggleAudio={() => onToggleStoryAudio(overview.spokenScript)}
+              />
+            )}
+          </div>
+
+          {/* Visão Geral Criada por IA (Adaptada à Idade + Frase Grifada) */}
+          <div className={`rounded-3xl border ${palette.cardBorder} ${palette.cardBg} p-5 sm:p-6 shadow-xs space-y-4`}>
+            <div className="flex items-center justify-between gap-2">
+              <span className={`text-xs font-extrabold flex items-center gap-1.5 ${palette.accentText}`}>
+                <Sparkles size={15} /> Visão geral adaptada para {visitorAge || 14} anos
+              </span>
+              <button
+                onClick={() => onToggleStoryAudio(overview.spokenScript)}
+                className="px-3 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center gap-1.5"
+              >
+                <Volume2 size={13} /> {isPlayingAudio ? 'Pausar Voz' : 'Ouvir Explicação'}
+              </button>
+            </div>
+
+            <p className="text-sm sm:text-base text-slate-800 leading-relaxed">
+              <mark className={`px-1.5 py-0.5 rounded-md font-bold ${palette.highlightBg} ${palette.highlightText}`}>
+                {overview.highlightedSentence}
+              </mark>{' '}
+              {overview.bodyParagraph}
+            </p>
+
+            <ul className="space-y-2 pt-1">
+              {overview.bullets.map((b, i) => (
+                <li key={i} className="text-xs sm:text-sm text-slate-700 leading-relaxed flex gap-2">
+                  <span className="font-black text-emerald-700">•</span>
+                  <span>
+                    <strong className="text-slate-900">{b.label}:</strong> {b.detail}
+                  </span>
+                </li>
+              ))}
+            </ul>
+
+            {latestGuideMsg && latestGuideMsg.sender === 'guide' && latestGuideMsg.id.startsWith('g-') && (
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-800">
+                <strong className="text-emerald-800 block mb-0.5">Resposta do Guia:</strong>
+                {latestGuideMsg.text}
+              </div>
+            )}
+
+            {/* Barra flutuante estilo "Pergunte o que quiser" */}
+            <form onSubmit={handleAskSubmit} className="pt-2 flex items-center gap-2">
+              <input
+                type="text"
+                value={freeQuery}
+                onChange={(e) => setFreeQuery(e.target.value)}
+                placeholder="Pergunte qualquer dúvida sobre este tema para o Guia..."
+                className="flex-1 px-4 py-2.5 rounded-2xl border border-slate-300 bg-slate-50/70 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600"
+              />
+              <button
+                type="submit"
+                disabled={loadingReply || !freeQuery.trim()}
+                className="px-4 py-2.5 rounded-2xl bg-slate-900 hover:bg-slate-800 disabled:opacity-40 text-white text-xs font-bold flex items-center gap-1.5"
+              >
+                <Send size={14} /> Perguntar
+              </button>
+            </form>
+          </div>
+
+          {/* Convite do Agente para Vídeo + Mensagem de Reconhecimento + Quiz */}
+          <div className="rounded-3xl border border-emerald-800/20 bg-white p-5 sm:p-6 shadow-sm space-y-4">
+            {videoChoice === 'pending' && (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1">
+                    <Video size={13} /> Passo Seguinte da Jornada
+                  </span>
+                  <h3 className="text-sm sm:text-base font-extrabold text-slate-900">
+                    Quer assistir a alguns dos vídeos que selecionamos para você nesta sessão?
+                  </h3>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={handleAcceptVideo}
+                    className="px-4 py-2 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-white text-xs sm:text-sm font-extrabold"
+                  >
+                    Sim, assistir vídeo
+                  </button>
+                  <button
+                    onClick={onOpenQuiz}
+                    className="px-4 py-2 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs sm:text-sm font-bold"
+                  >
+                    Não, ir ao Quiz
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {videoChoice === 'yes' && (
+              <div className="space-y-4">
+                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-start gap-3">
+                  <CheckCircle2 size={20} className="text-emerald-700 shrink-0 mt-0.5" />
+                  <p className="text-xs sm:text-sm font-bold text-emerald-950 leading-relaxed">
+                    “{PRAISE_BEFORE_VIDEO}”
+                  </p>
+                </div>
+
+                {sessionVideoUrl ? (
+                  <div className="aspect-video rounded-2xl overflow-hidden bg-slate-950 border border-slate-200">
+                    {sessionVideoUrl.includes('youtube') || sessionVideoUrl.includes('youtu.be') || sessionVideoUrl.includes('drive.google') ? (
+                      <iframe src={sessionVideoUrl} title={activeCommunity.titulo} className="w-full h-full border-0" allowFullScreen />
+                    ) : (
+                      <video src={sessionVideoUrl} controls playsInline className="w-full h-full object-contain" />
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-600 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                    O vídeo principal desta comunidade está sendo exibido nos slides do banner acima. Quando terminar, participe do desafio abaixo!
+                  </p>
+                )}
+
+                <button
+                  onClick={onOpenQuiz}
+                  className="w-full py-3 rounded-2xl bg-amber-600 hover:bg-amber-500 text-white text-sm font-extrabold flex items-center justify-center gap-2 shadow-sm"
+                >
+                  <Award size={17} /> Finalizar com Desafio Quiz (5 Perguntas)
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Coluna Lateral Direita (~35% — Estilo Cards de Fontes do Google AI Overview) */}
+        <aside className="lg:col-span-4 space-y-3">
+          <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-600 px-1">
+            Outras Jornadas & Territórios de MT
+          </h4>
+
+          {communities.map((item) => {
+            const selected = item.id === activeCommunity.id;
+            const thumb = getCommunityMediaSlides(item.id, item.infografico.url, item.videoEquipe.url)[0]?.url;
+
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleChoosePinOrCard(item)}
+                className={`w-full text-left rounded-2xl p-3 border transition-all flex items-start gap-3 ${
+                  selected
+                    ? 'bg-white border-emerald-700 ring-2 ring-emerald-700/20 shadow-sm'
+                    : 'bg-white/90 hover:bg-white border-slate-200/90'
+                }`}
+              >
+                {thumb && (
+                  <img
+                    src={thumb}
+                    alt={item.titulo}
+                    className="w-16 h-16 rounded-xl object-cover shrink-0 border border-slate-200"
+                  />
+                )}
+                <div className="min-w-0 flex-1 space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wide text-emerald-800 block truncate">
+                    {item.bioma} · {item.municipio}
+                  </span>
+                  <h5 className="text-xs sm:text-sm font-extrabold text-slate-900 leading-tight line-clamp-1">
+                    {item.titulo}
+                  </h5>
+                  <p className="text-[11px] text-slate-600 leading-snug line-clamp-2">
+                    {item.subtitulo}
+                  </p>
+                </div>
+              </button>
+            );
+          })}
+
+          <button
+            onClick={onOpenQuiz}
+            className="w-full p-4 rounded-2xl bg-gradient-to-r from-emerald-900 to-teal-800 text-white text-left flex items-center justify-between gap-3 shadow-sm hover:opacity-95 transition-opacity"
+          >
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-200 block">
+                Desafio Interativo
+              </span>
+              <span className="text-sm font-extrabold">Quiz: 5 de 100 Curiosidades</span>
+            </div>
+            <Award size={22} className="text-amber-300 shrink-0" />
+          </button>
+        </aside>
+      </div>
+    </div>
+  );
+};
+

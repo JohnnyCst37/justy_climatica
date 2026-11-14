@@ -234,7 +234,7 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
 
           {[...itens]
             .sort((a, b) => (a.id === itemSelecionadoId ? 1 : 0) - (b.id === itemSelecionadoId ? 1 : 0))
-            .map((item, idx) => {
+            .map((item) => {
               const pos = projection([item.coordenadas.lng, item.coordenadas.lat]);
               if (!pos) return null;
               const isSelected = item.id === itemSelecionadoId;
@@ -255,17 +255,19 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
                   onMouseLeave={() => setHoveredItemId(null)}
                 >
                   {(isSelected || item.isWebDiscovered) && (
-                    <circle r={19 * activeScale} fill={fillPin} fillOpacity="0.2" stroke={fillPin} strokeWidth={1.8 * activeScale} />
+                    <circle cy={-16 * activeScale} r={19 * activeScale} fill={fillPin} fillOpacity="0.22" stroke={fillPin} strokeWidth={1.8 * activeScale} />
                   )}
                   <g transform={`scale(${scalePin})`} filter="url(#pin-drop-shadow)">
-                    <circle r={isSelected ? 13 : 11} fill="#ffffff" stroke={fillPin} strokeWidth={isSelected ? 3 : 2.2} />
-                    <circle r={isSelected ? 9.5 : 8} fill={fillPin} />
-                    <text x="0" y="3.5" textAnchor="middle" fill="#ffffff" fontSize="9.5" fontWeight="800">
-                      {item.isWebDiscovered ? 'W' : idx + 1}
-                    </text>
+                    <path
+                      d="M0,2 C-6,-7 -12,-14 -12,-21 A12,12 0 1,1 12,-21 C12,-14 6,-7 0,2 Z"
+                      fill={fillPin}
+                      stroke="#ffffff"
+                      strokeWidth={isSelected ? 2.6 : 1.8}
+                    />
+                    <circle cx="0" cy="-21" r={isSelected ? 4.8 : 4} fill="#ffffff" />
                   </g>
                   {(isSelected || isHovered) && (
-                    <g transform={`translate(0, ${-20 * activeScale}) scale(${activeScale})`} filter="url(#pin-drop-shadow)" className="pointer-events-none">
+                    <g transform={`translate(0, ${-36 * activeScale}) scale(${activeScale})`} filter="url(#pin-drop-shadow)" className="pointer-events-none">
                       <rect x="-86" y="-20" width="172" height="19" rx="5" fill="#0f172a" />
                       <text x="0" y="-7.5" textAnchor="middle" fill="#ffffff" fontSize="8.5" fontWeight="700">
                         {item.titulo.length > 27 ? `${item.titulo.slice(0, 26)}…` : item.titulo}

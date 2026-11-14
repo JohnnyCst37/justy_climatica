@@ -15,6 +15,7 @@ export const assistantStepRequestSchema = z.object({
     saberes: z.array(z.number().int()).max(10),
   }),
   userMessage: z.string().min(1).max(800),
+  visitorAge: z.number().int().min(5).max(110).optional(),
   useWebSearch: z.boolean().optional().default(false),
 });
 
@@ -30,30 +31,6 @@ export const assistantStructuredResponseSchema = z.object({
       url: z.string().url(),
     })
   ).optional().default([]),
-});
-
-export const discoverRequestSchema = z.object({
-  query: z.string().min(3).max(200),
-  biome: z.enum(['Cerrado', 'Pantanal', 'Amazônia-Cerrado', 'Todos']).optional().default('Todos'),
-});
-
-export const discoveredCommunitySchema = z.object({
-  id: z.string().min(1),
-  titulo: z.string().min(1),
-  subtitulo: z.string().min(1),
-  municipio: z.string().min(1),
-  bioma: z.enum(['Cerrado', 'Pantanal', 'Amazônia-Cerrado']),
-  lat: z.number().min(-35).max(6),
-  lng: z.number().min(-75).max(-32),
-  injusticaClimatica: z.string().min(1),
-  cienciaClara: z.string().min(1),
-  saberesLocais: z.string().min(1),
-  porquePrecisaDeVoz: z.string().min(1),
-  fontes: z.array(z.object({ titulo: z.string(), url: z.string() })).min(1),
-});
-
-export const discoveredResponseSchema = z.object({
-  comunidades: z.array(discoveredCommunitySchema).min(1).max(4),
 });
 
 export const ttsRequestSchema = z.object({

@@ -8,7 +8,8 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore';
-import { getFirestoreClient } from '../../../shared/config/firebaseClient';
+import { getDownloadURL, ref, uploadBytesResumable } from 'firebase/storage';
+import { getFirestoreClient, getStorageClient } from '../../../shared/config/firebaseClient';
 import { postApiJson } from '../../../shared/services/apiClient';
 import type { CommunityNode, SchoolWork } from '../../../shared/types/domain';
 
@@ -77,6 +78,58 @@ export async function fetchCommunityWorks(
   }
 }
 
+const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
+const ALLOWED_VIDEO_MIMES = new Set(['video/mp4', 'video/webm', 'video/quicktime']);
+
+async function uploadVideoDirect(
+  file: File,
+  authorUid: string,
+  communityId: string,
+  onProgress?: (pct: number) => void
+): Promise<string> {
+  if (!ALLOWED_VIDEO_MIMES.has(file.type)) {
+    throw new Error('Formato de vídeo não suportado. Envie MP4, WebM ou MOV.');
+  }
+  if (file.size > MAX_VIDEO_BYTES) {
+    throw new Error('O vídeo deve ter no máximo 50 MB para o evento (ou use um link do YouTube).');
+  }
+
+  const storage = getStorageClient();
+  if (!storage || authorUid.startsWith('local_')) {
+    onProgress?.(100);
+    return URL.createObjectURL(file);
+  }
+
+  const ext = file.name.split('.').pop()?.toLowerCase() || 'mp4';
+  const safePath = `school_works/${authorUid}/${Date.now()}_${communityId}.${ext}`;
+  const storageRef = ref(storage, safePath);
+
+  return new Promise((resolve) => {
+    const task = uploadBytesResumable(storageRef, file, { contentType: file.type });
+    task.on(
+      'state_changed',
+      (snap) => {
+        if (snap.totalBytes > 0) {
+          onProgress?.(Math.round((snap.bytesTransferred / snap.totalBytes) * 100));
+        }
+      },
+      () => {
+        // Fallback para preview local caso Storage não esteja provisionado no evento
+        onProgress?.(100);
+        resolve(URL.createObjectURL(file));
+      },
+      async () => {
+        try {
+          const url = await getDownloadURL(task.snapshot.ref);
+          resolve(url);
+        } catch {
+          resolve(URL.createObjectURL(file));
+        }
+      }
+    );
+  });
+}
+
 export async function submitSchoolWork(params: {
   communityId: string;
   schoolName: string;
@@ -85,16 +138,25 @@ export async function submitSchoolWork(params: {
   workType: SchoolWork['workType'];
   description: string;
   videoUrl?: string;
+  videoFile?: File;
   imageFileBase64?: string;
   imageMimeType?: 'image/png' | 'image/jpeg' | 'image/webp';
   authorUid: string;
   authorLabel: string;
   sessionToken?: string;
   autoApprove?: boolean;
+  onUploadProgress?: (pct: number) => void;
 }): Promise<SchoolWork> {
   let mediaUrl = (params.videoUrl || '').trim();
 
-  if (params.workType !== 'video' && params.imageFileBase64 && params.imageMimeType) {
+  if (params.workType === 'video' && params.videoFile) {
+    mediaUrl = await uploadVideoDirect(
+      params.videoFile,
+      params.authorUid,
+      params.communityId,
+      params.onUploadProgress
+    );
+  } else if (params.workType !== 'video' && params.imageFileBase64 && params.imageMimeType) {
     const uploaded = await postApiJson<
       {
         communityId: string;

@@ -1,29 +1,25 @@
 import React, { useState } from 'react';
-import { Globe, Loader2, Mic, MicOff, Send, Sparkles, Volume2, ChevronUp, ChevronDown } from 'lucide-react';
+import { Loader2, Mic, MicOff, Send, Sparkles, Volume2, ChevronUp, ChevronDown } from 'lucide-react';
 import type { AssistantMessage } from '../../../shared/types/domain';
 
 interface GuideAssistantDockProps {
   messages: AssistantMessage[];
   loadingReply: boolean;
-  discoveringWeb: boolean;
   voiceStatus: 'idle' | 'connecting' | 'live' | 'speaking';
   errorMsg: string | null;
   onSendMessage: (text: string) => void;
   onSpeakText: (text: string) => void;
   onToggleLiveVoice: () => void;
-  onSearchWebCommunities: () => void;
 }
 
 export const GuideAssistantDock: React.FC<GuideAssistantDockProps> = ({
   messages,
   loadingReply,
-  discoveringWeb,
   voiceStatus,
   errorMsg,
   onSendMessage,
   onSpeakText,
   onToggleLiveVoice,
-  onSearchWebCommunities,
 }) => {
   const [expanded, setExpanded] = useState(false);
   const [input, setInput] = useState('');
@@ -51,16 +47,6 @@ export const GuideAssistantDock: React.FC<GuideAssistantDockProps> = ({
         </button>
 
         <div className="flex items-center gap-1.5">
-          <button
-            onClick={onSearchWebCommunities}
-            disabled={discoveringWeb}
-            title="Buscar comunidades tradicionais anônimas na web"
-            className="px-2 py-1 rounded-lg border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-800 text-[10.5px] font-bold flex items-center gap-1"
-          >
-            {discoveringWeb ? <Loader2 size={11} className="animate-spin" /> : <Globe size={11} />}
-            <span>Buscar Vozes Web</span>
-          </button>
-
           <button
             onClick={() => latestGuide && onSpeakText(latestGuide.text)}
             disabled={!latestGuide || voiceStatus === 'speaking'}

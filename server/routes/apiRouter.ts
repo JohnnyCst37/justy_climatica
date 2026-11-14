@@ -8,14 +8,12 @@ import {
 } from '../middleware/authMiddleware.js';
 import {
   assistantStepRequestSchema,
-  discoverRequestSchema,
   liveTokenRequestSchema,
   ttsRequestSchema,
   uploadWorkRequestSchema,
 } from '../schemas/aiSchemas.js';
 import {
   createEphemeralLiveToken,
-  discoverAnonymousCommunities,
   generateGuidedAssistantReply,
   synthesizeNarration,
 } from '../services/geminiService.js';
@@ -73,39 +71,6 @@ apiRouter.post(
 );
 
 apiRouter.post(
-  '/assistant/discover',
-  requireAuth,
-  rateLimitMiddleware,
-  async (req: AuthenticatedRequest, res: Response) => {
-    const parsed = discoverRequestSchema.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(400).json({ error: 'Consulta de busca inválida.' });
-      return;
-    }
-
-    const uid = req.authUser?.uid || 'anon';
-    const quota = await acquireQuotaSlot(uid, 0.03);
-    if (!quota.allowed || !quota.reservationId) {
-      res.status(429).json({
-        error: 'Cota temporária atingida para novas buscas web. Tente em instantes.',
-        code: quota.code,
-      });
-      return;
-    }
-
-    try {
-      const discovered = await discoverAnonymousCommunities(parsed.data.query, parsed.data.biome);
-      await commitQuotaUsage(uid, quota.reservationId, 0.02, 0.03);
-      res.json(discovered);
-    } catch (error) {
-      await releaseQuotaReservation(uid, quota.reservationId, 0.03);
-      const safe = sanitizeAiErrorMessage(error);
-      res.status(safe.status).json({ error: safe.message });
-    }
-  }
-);
-
-apiRouter.post(
   '/live-token',
   requireAuth,
   rateLimitMiddleware,
@@ -148,7 +113,7 @@ apiRouter.post(
       return;
     }
 
-    const uid = req.authUser?.uid || req.ip || 'public-visitor';
+    const uid = `${req.authUser?.uid || req.ip || 'public-visitor'}:${parsed.data.slideId}`;
     const quota = await acquireQuotaSlot(uid, 0.015);
     if (!quota.allowed || !quota.reservationId) {
       res.status(429).json({

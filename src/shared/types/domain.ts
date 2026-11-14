@@ -1,18 +1,62 @@
 export type JourneyKey = 'justica' | 'ciencia' | 'saberes';
 
+export type ThemeSessionKey = 'justica' | 'comunidades' | 'biodiversidade';
+
+export type AgeGroupKey = '10-12' | '13-15' | '16-18' | '19+';
+
+export type BiomePaletteKey = 'cerrado' | 'amazonia' | 'pantanal' | 'buritis';
+
 export type GrupoId = 'todos' | 'grupo2' | 'grupo1' | 'grupo3' | 'descobertas';
 
 export type BiomaType = 'Pantanal' | 'Cerrado' | 'Amazônia-Cerrado';
 
-export type UserRole = 'student' | 'visitor' | 'professor';
+export type UserRole =
+  | 'visitor'
+  | 'student'
+  | 'lider'
+  | 'professor'
+  | 'coordenador'
+  | 'diretor'
+  | 'super_admin';
+
+export type AuthorizedEmailRole =
+  | 'super_admin'
+  | 'diretor'
+  | 'coordenador'
+  | 'professor'
+  | 'lider';
+
+export interface AuthorizedEmailEntry {
+  email: string;
+  name: string;
+  role: AuthorizedEmailRole;
+  classGroup?: string;
+  status?: 'pending' | 'approved';
+  addedByEmail: string;
+  createdAt: number;
+}
 
 export interface UserProfile {
   uid: string;
   nickname: string;
+  email?: string;
   classCode: string;
   role: UserRole;
   isAnonymous: boolean;
   sessionToken: string;
+  pendingApproval?: boolean;
+  age?: number;
+  ageGroup?: AgeGroupKey;
+}
+
+export interface QuizQuestion {
+  id: number;
+  theme: ThemeSessionKey;
+  question: string;
+  options: [string, string, string, string];
+  correctIndex: number;
+  curiosity: string;
+  minAgeGroup?: AgeGroupKey;
 }
 
 export interface JourneyProgress {

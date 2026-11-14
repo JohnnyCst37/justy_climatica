@@ -18,8 +18,10 @@ interface JourneyStepSaberesProps {
     workType: SchoolWork['workType'];
     description: string;
     videoUrl?: string;
+    videoFile?: File;
     imageFileBase64?: string;
     imageMimeType?: 'image/png' | 'image/jpeg' | 'image/webp';
+    onUploadProgress?: (pct: number) => void;
   }) => Promise<unknown>;
 }
 

@@ -34,8 +34,10 @@ interface JourneyPanelProps {
     workType: SchoolWork['workType'];
     description: string;
     videoUrl?: string;
+    videoFile?: File;
     imageFileBase64?: string;
     imageMimeType?: 'image/png' | 'image/jpeg' | 'image/webp';
+    onUploadProgress?: (pct: number) => void;
   }) => Promise<unknown>;
   assistantSlot: React.ReactNode;
 }
@@ -111,6 +113,7 @@ export const JourneyPanel: React.FC<JourneyPanelProps> = ({
         {/* Banner Informativo Hero: Carrossel de Fotos, Infográficos e Vídeos com Áudio Fluido */}
         <HeroMediaBanner
           community={community}
+          works={works}
           isPlayingAudio={isPlayingAudio}
           isAudioLoading={isAudioLoading}
           onToggleAudio={onToggleAudio}

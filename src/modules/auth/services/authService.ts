@@ -11,7 +11,16 @@ import {
   getFirebaseAuthClient,
   getFirestoreClient,
 } from '../../../shared/config/firebaseClient';
-import type { UserProfile, UserRole } from '../../../shared/types/domain';
+import type {
+  AuthorizedEmailRole,
+  UserProfile,
+  UserRole,
+} from '../../../shared/types/domain';
+import {
+  ROLE_LABELS,
+  findAuthorizedEmail,
+  requestAccessRegistration,
+} from './accessControlService';
 
 const LOCAL_PROFILE_KEY = 'justy_climatica_user_profile_v1';
 
@@ -97,6 +106,61 @@ export async function loginWithClassroomCode(nickname: string, classCode: string
   return profile;
 }
 
+export async function loginWithAuthorizedEmail(email: string): Promise<UserProfile> {
+  const cleanEmail = email.trim().toLowerCase();
+  const auth = getFirebaseAuthClient();
+  if (auth && !auth.currentUser) {
+    await signInAnonymously(auth).catch(() => undefined);
+  }
+
+  const entry = await findAuthorizedEmail(cleanEmail);
+  if (!entry) {
+    throw new Error(
+      'Este e-mail ainda não foi cadastrado. Clique em "Cadastre-se" ou "Entrar / Cadastrar com Google" para solicitar acesso.'
+    );
+  }
+
+  const uid = auth?.currentUser?.uid || `auth_${cleanEmail.replace(/[^a-z0-9]/g, '_')}`;
+  const profile: UserProfile = {
+    uid,
+    nickname: entry.name,
+    email: entry.email,
+    classCode: entry.classGroup || ROLE_LABELS[entry.role].toUpperCase(),
+    role: entry.role,
+    isAnonymous: false,
+    pendingApproval: entry.status === 'pending',
+    sessionToken: buildSessionToken(uid),
+  };
+
+  saveLocalUserProfile(profile);
+  return profile;
+}
+
+export async function registerAndRequestApproval(input: {
+  email: string;
+  name: string;
+  role: AuthorizedEmailRole;
+  classGroup?: string;
+}): Promise<UserProfile> {
+  const entry = await requestAccessRegistration(input);
+  const auth = getFirebaseAuthClient();
+  const uid = auth?.currentUser?.uid || `auth_${entry.email.replace(/[^a-z0-9]/g, '_')}`;
+
+  const profile: UserProfile = {
+    uid,
+    nickname: entry.name,
+    email: entry.email,
+    classCode: entry.classGroup || ROLE_LABELS[entry.role].toUpperCase(),
+    role: entry.role,
+    isAnonymous: false,
+    pendingApproval: entry.status === 'pending',
+    sessionToken: buildSessionToken(uid),
+  };
+
+  saveLocalUserProfile(profile);
+  return profile;
+}
+
 export async function loginWithGoogleAccount(): Promise<UserProfile> {
   const auth = getFirebaseAuthClient();
   if (!auth) {
@@ -105,15 +169,21 @@ export async function loginWithGoogleAccount(): Promise<UserProfile> {
 
   const provider = new GoogleAuthProvider();
   const cred = await signInWithPopup(auth, provider);
-  const role = await resolveRole(cred.user.uid, 'visitor');
-  const nickname = cred.user.displayName?.split(' ')[0] || 'Visitante';
+  const cleanEmail = (cred.user.email || '').trim().toLowerCase();
+  const authorized = cleanEmail ? await findAuthorizedEmail(cleanEmail) : null;
+  const role: UserRole = authorized ? authorized.role : 'visitor';
+  const nickname = authorized?.name || cred.user.displayName || 'Docente';
 
   const profile: UserProfile = {
     uid: cred.user.uid,
     nickname,
-    classCode: role === 'professor' ? 'DOCENTE' : 'VISITANTE',
+    email: authorized?.email || cleanEmail || undefined,
+    classCode:
+      authorized?.classGroup ||
+      (authorized ? ROLE_LABELS[authorized.role].toUpperCase() : 'NOVO-CADASTRO'),
     role,
     isAnonymous: false,
+    pendingApproval: authorized ? authorized.status === 'pending' : false,
     sessionToken: buildSessionToken(cred.user.uid),
   };
 
@@ -121,7 +191,7 @@ export async function loginWithGoogleAccount(): Promise<UserProfile> {
   if (db) {
     await setDoc(
       doc(db, 'users', cred.user.uid),
-      { nickname, classCode: profile.classCode, role, updatedAt: Date.now() },
+      { nickname, email: profile.email || '', classCode: profile.classCode, role, updatedAt: Date.now() },
       { merge: true }
     ).catch(() => undefined);
   }
@@ -145,18 +215,26 @@ export function subscribeAuthChanges(onProfile: (profile: UserProfile | null) =>
   }
 
   return onAuthStateChanged(auth, async (fbUser: User | null) => {
+    const local = loadLocalUserProfile();
     if (!fbUser) {
-      onProfile(loadLocalUserProfile());
+      onProfile(local);
       return;
     }
-    const local = loadLocalUserProfile();
-    const role = await resolveRole(fbUser.uid, fbUser.isAnonymous ? 'student' : 'visitor');
+    const cleanEmail = (fbUser.email || local?.email || '').trim().toLowerCase();
+    const authorized = cleanEmail ? await findAuthorizedEmail(cleanEmail) : null;
+    const role = authorized ? authorized.role : await resolveRole(fbUser.uid, fbUser.isAnonymous ? 'student' : 'visitor');
     const profile: UserProfile = {
       uid: fbUser.uid,
-      nickname: local?.nickname || fbUser.displayName?.split(' ')[0] || 'Estudante',
-      classCode: local?.classCode || (role === 'professor' ? 'DOCENTE' : '9ANO-MT'),
+      nickname: authorized?.name || local?.nickname || fbUser.displayName?.split(' ')[0] || 'Estudante',
+      email: authorized?.email || cleanEmail || undefined,
+      classCode:
+        authorized?.classGroup ||
+        (authorized
+          ? ROLE_LABELS[authorized.role].toUpperCase()
+          : local?.classCode || (role === 'professor' ? 'DOCENTE' : '9ANO-MT')),
       role,
-      isAnonymous: fbUser.isAnonymous,
+      isAnonymous: authorized ? false : fbUser.isAnonymous,
+      pendingApproval: authorized ? authorized.status === 'pending' : false,
       sessionToken: buildSessionToken(fbUser.uid),
     };
     saveLocalUserProfile(profile);

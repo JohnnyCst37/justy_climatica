@@ -1,201 +1,239 @@
-import React, { useMemo, useState } from 'react';
-import { LogIn, LogOut, Map, PanelRight, Shield } from 'lucide-react';
-import {
-  CURATED_COMMUNITIES,
-  EIXOS_TEMATICOS,
-} from './shared/data/communityRepository';
-import type { CommunityNode, GrupoId } from './shared/types/domain';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Award, Lock, RotateCcw, Volume2, VolumeX } from 'lucide-react';
+import { useCommunitiesList } from './shared/hooks/useCommunitiesList';
+import type { AgeGroupKey, ThemeSessionKey } from './shared/types/domain';
 import { BioPatrimonioLogo } from './shared/components/Icons';
-import { MapCanvas } from './modules/map/components/MapCanvas';
+import { resolveBiomePalette } from './shared/utils/biomeThemePalettes';
 import { useAuthSession } from './modules/auth/hooks/useAuthSession';
-import { LoginModal } from './modules/auth/components/LoginModal';
 import { useJourneyProgress } from './modules/journeys/hooks/useJourneyProgress';
-import { JourneyPanel } from './modules/journeys/components/JourneyPanel';
 import { useSchoolWorks } from './modules/submissions/hooks/useSchoolWorks';
 import { useGuideAssistant } from './modules/assistant/hooks/useGuideAssistant';
-import { GuideAssistantDock } from './modules/assistant/components/GuideAssistantDock';
+import { lyriaEngine } from './modules/audio/services/lyriaSoundscapeEngine';
+import { EventCoverScreen } from './modules/kiosk/components/EventCoverScreen';
+import { KioskLockModal } from './modules/kiosk/components/KioskLockModal';
+import { StandaloneSubmissionPage } from './modules/submissions/components/StandaloneSubmissionPage';
+import { GoogleStyleSearchStage } from './modules/journeys/components/GoogleStyleSearchStage';
+import { ClimateQuizModal } from './modules/quiz/components/ClimateQuizModal';
+
+function checkIsSubmitRoute(): boolean {
+  if (typeof window === 'undefined') return false;
+  return (
+    window.location.pathname.startsWith('/enviar') ||
+    new URLSearchParams(window.location.search).get('modo') === 'enviar'
+  );
+}
 
 export const App: React.FC = () => {
-  const [discoveredCommunities, setDiscoveredCommunities] = useState<CommunityNode[]>([]);
-  const [activeEixo, setActiveEixo] = useState<GrupoId>('todos');
-  const [selectedId, setSelectedId] = useState<string>(CURATED_COMMUNITIES[0]?.id || '');
-  const [loginOpen, setLoginOpen] = useState(false);
-  const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
+  const { communities: allCommunities } = useCommunitiesList();
+  const [isSubmitRoute, setIsSubmitRoute] = useState<boolean>(checkIsSubmitRoute);
+  const [selectedId, setSelectedId] = useState<string>(allCommunities[0]?.id || '');
+  const [visitorSession, setVisitorSession] = useState<{ age: number; ageGroup: AgeGroupKey } | null>(null);
+  const [activeTheme, setActiveTheme] = useState<ThemeSessionKey>('justica');
+  const [kioskActive, setKioskActive] = useState(false);
+  const [unlockedByProfessor, setUnlockedByProfessor] = useState(false);
+  const [adminPromptOpen, setAdminPromptOpen] = useState(false);
+  const [quizOpen, setQuizOpen] = useState(false);
+  const [lyriaMuted, setLyriaMuted] = useState(false);
 
-  const { user, authError, enterWithClassroom, enterWithGoogle, logout } = useAuthSession();
+  const { user, enterWithClassroom, logout } = useAuthSession();
 
-  const allCommunities = useMemo(
-    () => [...CURATED_COMMUNITIES, ...discoveredCommunities],
-    [discoveredCommunities]
-  );
-
-  const filteredCommunities = useMemo(() => {
-    if (activeEixo === 'todos') return allCommunities;
-    return allCommunities.filter((c) => c.grupoId === activeEixo);
-  }, [allCommunities, activeEixo]);
+  useEffect(() => {
+    const onPopState = () => setIsSubmitRoute(checkIsSubmitRoute());
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
 
   const activeCommunity = useMemo(
-    () =>
-      filteredCommunities.find((c) => c.id === selectedId) ||
-      filteredCommunities[0] ||
-      allCommunities[0] ||
-      null,
-    [filteredCommunities, selectedId, allCommunities]
+    () => allCommunities.find((c) => c.id === selectedId) || allCommunities[0],
+    [allCommunities, selectedId]
   );
 
-  const journey = useJourneyProgress(user?.uid, activeCommunity?.id);
-  const schoolWorks = useSchoolWorks(activeCommunity, user);
+  const effectiveUser = useMemo(
+    () =>
+      user && visitorSession
+        ? { ...user, age: visitorSession.age, ageGroup: visitorSession.ageGroup }
+        : user,
+    [user, visitorSession]
+  );
 
-  const handleDiscovered = (items: CommunityNode[]) => {
-    setDiscoveredCommunities((prev) => {
-      const existingIds = new Set(prev.map((p) => p.id));
-      const unique = items.filter((i) => !existingIds.has(i.id));
-      return [...prev, ...unique];
-    });
-    if (items[0]) {
-      setActiveEixo('todos');
-      setSelectedId(items[0].id);
-      setMobilePanelOpen(true);
-    }
-  };
+  const journey = useJourneyProgress(effectiveUser?.uid, activeCommunity?.id);
+  const schoolWorks = useSchoolWorks(activeCommunity, effectiveUser);
 
   const assistant = useGuideAssistant({
     community: activeCommunity,
     activeJourney: journey.activeJourney,
     stepIndex: journey.stepIndex,
     progress: journey.progress,
-    user,
-    onDiscoveredCommunities: handleDiscovered,
-    onRequestLogin: () => setLoginOpen(true),
+    user: effectiveUser,
+    onRequestLogin: () => setVisitorSession(null),
   });
 
-  const handleSelectEixo = (eixoId: GrupoId) => {
-    setActiveEixo(eixoId);
-    const list = eixoId === 'todos' ? allCommunities : allCommunities.filter((c) => c.grupoId === eixoId);
-    if (list[0]) setSelectedId(list[0].id);
-  };
+  const biomePalette = useMemo(
+    () => resolveBiomePalette(activeCommunity, activeTheme),
+    [activeCommunity, activeTheme]
+  );
+
+  const handleSelectTheme = useCallback(
+    (theme: ThemeSessionKey) => {
+      setActiveTheme(theme);
+      const mapped = theme === 'justica' ? 'justica' : theme === 'comunidades' ? 'saberes' : 'ciencia';
+      journey.selectJourney(mapped);
+    },
+    [journey]
+  );
+
+  const handleStartVisitor = useCallback(
+    async (input: { nickname: string; age: number; ageGroup: AgeGroupKey }) => {
+      await enterWithClassroom(input.nickname, 'MOSTRA-2026');
+      setVisitorSession({ age: input.age, ageGroup: input.ageGroup });
+      setKioskActive(true);
+      setUnlockedByProfessor(false);
+      setActiveTheme('justica');
+      setQuizOpen(false);
+    },
+    [enterWithClassroom]
+  );
+
+  const handleFinishVisitorCycle = useCallback(() => {
+    assistant.stopAudio();
+    lyriaEngine.setVoiceDucking(false);
+    setQuizOpen(false);
+    setVisitorSession(null);
+    setKioskActive(false);
+    void logout();
+  }, [assistant, logout]);
+
+  const handleToggleLyriaMute = useCallback(() => {
+    const next = !lyriaMuted;
+    setLyriaMuted(next);
+    lyriaEngine.setMuted(next);
+  }, [lyriaMuted]);
+
+  if (isSubmitRoute) {
+    return <StandaloneSubmissionPage />;
+  }
+
+  if (!visitorSession || !user) {
+    return (
+      <EventCoverScreen
+        onStartVisitor={handleStartVisitor}
+        onSpeakWelcome={(txt) => void assistant.speakText(txt)}
+        isSpeakingWelcome={assistant.isPlayingAudio || assistant.isAudioLoading}
+      />
+    );
+  }
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-[#f8f7f3] text-slate-900 font-sans overflow-hidden">
-      {/* Barra superior limpa (sem redundâncias) */}
-      <header className="flex items-center justify-between gap-4 px-4 py-2 bg-[#fdfbf7] border-b border-slate-200 flex-none z-30">
-        <div className="flex items-center gap-2 min-w-0">
-          <BioPatrimonioLogo className="w-6 h-6 shrink-0" />
-          <span className="text-sm font-extrabold tracking-tight text-slate-900 truncate">
-            Vozes do Clima & BioPatrimônio MT
-          </span>
+    <div className={`min-h-screen w-full flex flex-col font-sans transition-colors duration-500 ${biomePalette.pageBg}`}>
+      <header
+        className={`sticky top-0 z-30 border-b border-slate-200/80 backdrop-blur-md px-4 sm:px-6 py-2.5 flex items-center justify-between gap-3 ${biomePalette.headerBg}`}
+      >
+        <div className="flex items-center gap-2.5 min-w-0">
+          <BioPatrimonioLogo className="w-7 h-7 shrink-0" />
+          <div className="min-w-0">
+            <span className="text-sm font-extrabold tracking-tight text-slate-900 block truncate">
+              Jornada da Justiça Climática · EE CM João Ribeiro Vilela
+            </span>
+            <span className={`inline-block text-[11px] font-bold px-2 py-0.5 rounded-full mt-0.5 ${biomePalette.badgeBg} ${biomePalette.badgeText}`}>
+              {biomePalette.label}
+            </span>
+          </div>
         </div>
 
-        <nav className="hidden xl:flex items-center gap-4 text-xs font-semibold text-slate-600">
-          {EIXOS_TEMATICOS.map((eixo) => (
-            <button
-              key={eixo.id}
-              onClick={() => handleSelectEixo(eixo.id)}
-              className={`py-0.5 whitespace-nowrap transition-colors ${
-                activeEixo === eixo.id
-                  ? 'text-emerald-800 border-b-2 border-emerald-700 font-bold'
-                  : 'hover:text-slate-900'
-              }`}
-            >
-              {eixo.rotulo}
-            </button>
-          ))}
-        </nav>
-
-        <div className="flex items-center gap-2 shrink-0">
-          {user ? (
-            <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-lg px-2.5 py-1 text-xs">
-              <span className="font-bold text-emerald-900 flex items-center gap-1">
-                {user.role === 'professor' && <Shield size={12} className="text-amber-600" />}
-                {user.nickname} · {user.classCode}
-              </span>
-              <button onClick={() => void logout()} className="text-slate-500 hover:text-rose-700" title="Sair">
-                <LogOut size={13} />
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setLoginOpen(true)}
-              className="px-3 py-1.5 rounded-lg bg-emerald-800 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5"
-            >
-              <LogIn size={13} />
-              <span>Entrar</span>
-            </button>
-          )}
+        <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+          <button
+            type="button"
+            onClick={handleToggleLyriaMute}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/80 hover:bg-white border border-slate-200 text-xs font-semibold text-slate-700"
+            title={lyriaMuted ? 'Ativar trilha sonora Lyria' : 'Silenciar trilha sonora Lyria'}
+          >
+            {lyriaMuted ? <VolumeX size={14} className="text-rose-600" /> : <Volume2 size={14} className="text-emerald-700" />}
+            <span className="hidden sm:inline">{lyriaMuted ? 'Som mudo' : 'Trilha Lyria'}</span>
+          </button>
 
           <button
-            onClick={() => setMobilePanelOpen((prev) => !prev)}
-            className="md:hidden px-2.5 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-semibold flex items-center gap-1"
+            type="button"
+            onClick={() => setQuizOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold shadow-xs"
           >
-            {mobilePanelOpen ? <Map size={13} /> : <PanelRight size={13} />}
-            <span>{mobilePanelOpen ? 'Mapa' : 'Jornada'}</span>
+            <Award size={14} />
+            <span>Quiz (5/100)</span>
+          </button>
+
+          <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/85 border border-slate-200 text-xs font-bold text-slate-800">
+            <span>{effectiveUser?.nickname}</span>
+            <span className="text-slate-400">·</span>
+            <span>{visitorSession.age} anos</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleFinishVisitorCycle}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/80 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-xs font-semibold text-slate-700 hover:text-rose-700"
+            title="Encerrar visita atual e preparar para próximo visitante"
+          >
+            <RotateCcw size={14} />
+            <span className="hidden sm:inline">Próximo Visitante</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setAdminPromptOpen(true)}
+            className="p-2 rounded-xl bg-slate-900/10 hover:bg-slate-900/20 text-slate-700"
+            title="Controle do Professor (Quiosque)"
+          >
+            <Lock size={14} />
           </button>
         </div>
       </header>
 
-      {/* Área principal: Mapa protagonista à esquerda + Painel único gradativo à direita */}
-      <div className="flex-1 flex flex-row overflow-hidden">
-        <main className={`flex-1 h-full relative ${mobilePanelOpen ? 'hidden md:block' : 'block'}`}>
-          <MapCanvas
-            itens={filteredCommunities}
-            itemSelecionadoId={activeCommunity?.id}
-            onItemClick={(item) => {
-              setSelectedId(item.id);
-              setMobilePanelOpen(true);
-            }}
-            onStartGuideClick={() => {
-              setMobilePanelOpen(true);
-              if (!user) setLoginOpen(true);
-            }}
+      <main className="flex-1 w-full">
+        {activeCommunity && (
+          <GoogleStyleSearchStage
+            communities={allCommunities}
+            activeCommunity={activeCommunity}
+            activeTheme={activeTheme}
+            visitorAge={visitorSession.age}
+            works={schoolWorks.works}
+            messages={assistant.messages}
+            loadingReply={assistant.loadingReply}
+            isPlayingAudio={assistant.isPlayingAudio}
+            isAudioLoading={assistant.isAudioLoading}
+            voiceStatus={assistant.voiceStatus}
+            onSelectCommunity={setSelectedId}
+            onSelectTheme={handleSelectTheme}
+            onSpeakText={(txt) => void assistant.speakText(txt)}
+            onToggleStoryAudio={(txt) => void assistant.toggleStoryAudio(txt)}
+            onSendQuestion={(txt) => void assistant.sendMessage(txt)}
+            onToggleLiveVoice={() => void assistant.toggleLiveVoice()}
+            onOpenQuiz={() => setQuizOpen(true)}
           />
-        </main>
+        )}
+      </main>
 
-        <aside
-          className={`w-full md:w-[480px] lg:w-[540px] xl:w-[600px] h-full flex-none transition-all duration-300 ${
-            mobilePanelOpen ? 'block' : 'hidden md:block'
-          }`}
-        >
-          {activeCommunity && (
-            <JourneyPanel
-              community={activeCommunity}
-              progress={journey.progress}
-              activeJourney={journey.activeJourney}
-              stepIndex={journey.stepIndex}
-              works={schoolWorks.works}
-              user={user}
-              isPlayingAudio={assistant.isPlayingAudio}
-              isAudioLoading={assistant.isAudioLoading}
-              onToggleAudio={() => void assistant.toggleStoryAudio()}
-              onSelectJourney={journey.selectJourney}
-              onSelectStep={journey.goToStep}
-              onCompleteAndAdvance={journey.completeAndAdvance}
-              onRequestLogin={() => setLoginOpen(true)}
-              onApproveWork={schoolWorks.approveWork}
-              onSubmitWork={schoolWorks.submitWork}
-              assistantSlot={
-                <GuideAssistantDock
-                  messages={assistant.messages}
-                  loadingReply={assistant.loadingReply}
-                  discoveringWeb={assistant.discoveringWeb}
-                  voiceStatus={assistant.voiceStatus}
-                  errorMsg={assistant.errorMsg}
-                  onSendMessage={(txt) => void assistant.sendMessage(txt)}
-                  onSpeakText={(txt) => void assistant.speakText(txt)}
-                  onToggleLiveVoice={() => void assistant.toggleLiveVoice()}
-                  onSearchWebCommunities={() => void assistant.searchAnonymousCommunities()}
-                />
-              }
-            />
-          )}
-        </aside>
-      </div>
+      <ClimateQuizModal
+        isOpen={quizOpen}
+        visitorName={effectiveUser?.nickname || 'Visitante'}
+        activeTheme={activeTheme}
+        onClose={() => setQuizOpen(false)}
+        onFinishVisitorCycle={handleFinishVisitorCycle}
+        onSpeakText={(txt) => void assistant.speakText(txt)}
+      />
 
-      <LoginModal
-        isOpen={loginOpen}
-        onClose={() => setLoginOpen(false)}
-        onClassroomLogin={enterWithClassroom}
-        onGoogleLogin={enterWithGoogle}
-        authError={authError}
+      <KioskLockModal
+        kioskActive={kioskActive}
+        unlockedByProfessor={unlockedByProfessor}
+        openAdminPrompt={adminPromptOpen}
+        onCloseAdminPrompt={() => setAdminPromptOpen(false)}
+        onUnlockKiosk={() => {
+          setUnlockedByProfessor(true);
+          setAdminPromptOpen(false);
+        }}
+        onOpenSubmitRoute={() => {
+          window.history.pushState({}, '', '/enviar');
+          setAdminPromptOpen(false);
+          setIsSubmitRoute(true);
+        }}
       />
     </div>
   );

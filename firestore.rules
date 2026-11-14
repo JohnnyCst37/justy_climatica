@@ -16,10 +16,17 @@ service cloud.firestore {
       );
     }
 
-    // Comunidades curadas e conteúdo pedagógico oficial
+    // Lista de e-mails pré-cadastrados para envio e moderação do evento
+    match /authorized_emails/{email} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    // Comunidades curadas e novos territórios cadastrados pelas equipes
     match /communities/{communityId} {
-      allow read: if resource.data.status == 'published' || isSignedIn();
-      allow create, update, delete: if isProfessor();
+      allow read: if true;
+      allow create, update: if isSignedIn();
+      allow delete: if isProfessor();
     }
 
     // Comunidades tradicionais anônimas descobertas via Google Search Grounding (escrita apenas server-side)
@@ -30,13 +37,11 @@ service cloud.firestore {
 
     // Trabalhos dos alunos ("Que escola está falando hoje desta comunidade?")
     match /school_works/{workId} {
-      allow read: if resource.data.status == 'approved'
-        || (isSignedIn() && resource.data.authorUid == request.auth.uid)
-        || isProfessor();
+      allow read: if true;
 
       allow create: if isSignedIn()
         && request.resource.data.authorUid == request.auth.uid
-        && request.resource.data.status == 'pending'
+        && request.resource.data.status in ['pending', 'approved']
         && request.resource.data.schoolName is string
         && request.resource.data.communityId is string;
 
