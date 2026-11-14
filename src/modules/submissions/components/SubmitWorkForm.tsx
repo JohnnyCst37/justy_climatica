@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { Film, Image as ImageIcon, Link2, UploadCloud } from 'lucide-react';
 import type { SchoolWork } from '../../../shared/types/domain';
+import { SCHOOL_CLASS_OPTIONS } from '../../auth/services/accessControlService';
+import { toEmbedVideoUrl } from '../../../shared/utils/videoEmbedResolver';
 
 interface SubmitWorkFormProps {
   isLoggedIn: boolean;
   isStaffMode?: boolean;
+  userClasses?: string[];
   onRequestLogin: () => void;
   onSubmitWork: (input: {
     schoolName: string;
@@ -23,17 +26,23 @@ interface SubmitWorkFormProps {
 export const SubmitWorkForm: React.FC<SubmitWorkFormProps> = ({
   isLoggedIn,
   isStaffMode = false,
+  userClasses,
   onRequestLogin,
   onSubmitWork,
 }) => {
+  const quickClasses =
+    userClasses && userClasses.length > 0
+      ? userClasses
+      : ['9º Ano A', '9º Ano B', '9º Ano C', '9º Ano D'];
   const [schoolName, setSchoolName] = useState('EE CM João Ribeiro Vilela');
-  const [classGroup, setClassGroup] = useState('9º Ano');
+  const [classGroup, setClassGroup] = useState(quickClasses[0] || '9º Ano A');
   const [studentTeam, setStudentTeam] = useState('');
   const [title, setTitle] = useState('');
-  const [workType, setWorkType] = useState<SchoolWork['workType']>('foto_campo');
+  const [workType, setWorkType] = useState<SchoolWork['workType']>('video');
   const [videoSourceMode, setVideoSourceMode] = useState<'file' | 'link'>('file');
   const [description, setDescription] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
+  const embedPreview = videoSourceMode === 'link' ? toEmbedVideoUrl(videoUrl) : null;
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [imageBase64, setImageBase64] = useState<string>('');
   const [imageMime, setImageMime] = useState<'image/png' | 'image/jpeg' | 'image/webp'>('image/png');
@@ -138,9 +147,43 @@ export const SubmitWorkForm: React.FC<SubmitWorkFormProps> = ({
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-2">
-        <input value={schoolName} onChange={(e) => setSchoolName(e.target.value)} placeholder="Nome da escola" required className="px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg" />
-        <input value={classGroup} onChange={(e) => setClassGroup(e.target.value)} placeholder="Turma (ex: 9º B)" required className="px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg" />
+      <div className="space-y-1.5">
+        <div className="flex flex-wrap items-center gap-1">
+          <span className="text-[10px] font-bold uppercase tracking-wide text-slate-500 mr-1">
+            Turma:
+          </span>
+          {quickClasses.map((turma) => (
+            <button
+              key={turma}
+              type="button"
+              onClick={() => setClassGroup(turma)}
+              className={`px-2 py-0.5 rounded-md text-[11px] font-bold border transition ${
+                classGroup === turma
+                  ? 'bg-emerald-800 text-white border-emerald-800'
+                  : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-emerald-50 hover:border-emerald-300'
+              }`}
+            >
+              {turma}
+            </button>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <input value={schoolName} onChange={(e) => setSchoolName(e.target.value)} placeholder="Nome da escola" required className="px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg" />
+          <input
+            list="submit-work-turmas"
+            value={classGroup}
+            onChange={(e) => setClassGroup(e.target.value)}
+            placeholder="Turma deste trabalho (ex: 9º Ano A)"
+            required
+            className="px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg font-semibold"
+          />
+        </div>
+        <datalist id="submit-work-turmas">
+          {SCHOOL_CLASS_OPTIONS.map((turma) => (
+            <option key={turma} value={turma} />
+          ))}
+        </datalist>
       </div>
 
       <input
@@ -151,14 +194,14 @@ export const SubmitWorkForm: React.FC<SubmitWorkFormProps> = ({
         className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg"
       />
 
-      <select value={workType} onChange={(e) => setWorkType(e.target.value as SchoolWork['workType'])} className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg bg-white">
+      <select value={workType} onChange={(e) => setWorkType(e.target.value as SchoolWork['workType'])} className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg bg-white font-semibold">
+        <option value="video">Vídeo Selecionado / Documentário (Link YouTube ou MP4 Baixado)</option>
         <option value="foto_campo">Foto de Apresentação / Campo</option>
-        <option value="video">Vídeo Curto do Estudante (MP4 ou Link)</option>
         <option value="slide_powerpoint">Imagem de Slide (PowerPoint / Canva)</option>
         <option value="infografico">Infográfico Científico</option>
       </select>
 
-      <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Título do trabalho da equipe" required className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg" />
+      <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Título do vídeo ou trabalho da equipe" required className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg" />
 
       {workType === 'video' ? (
         <div className="space-y-2">
@@ -170,7 +213,7 @@ export const SubmitWorkForm: React.FC<SubmitWorkFormProps> = ({
                 videoSourceMode === 'file' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600'
               }`}
             >
-              <Film size={12} /> Carregar Arquivo
+              <Film size={12} /> 🎬 Vídeo Baixado (MP4)
             </button>
             <button
               type="button"
@@ -179,7 +222,7 @@ export const SubmitWorkForm: React.FC<SubmitWorkFormProps> = ({
                 videoSourceMode === 'link' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600'
               }`}
             >
-              <Link2 size={12} /> Colar Link
+              <Link2 size={12} /> 🔗 Link do YouTube / Drive
             </button>
           </div>
 
@@ -191,7 +234,18 @@ export const SubmitWorkForm: React.FC<SubmitWorkFormProps> = ({
               </span>
             </label>
           ) : (
-            <input type="url" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="https://youtube.com/... ou https://drive.google.com/..." required className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg" />
+            <div className="space-y-2">
+              <input type="url" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="https://youtube.com/watch?v=... ou https://youtu.be/..." required className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg" />
+              {embedPreview && (
+                <iframe
+                  src={embedPreview}
+                  title="Pré-visualização do vídeo selecionado"
+                  className="w-full h-36 rounded-lg border border-slate-200 bg-slate-950"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              )}
+            </div>
           )}
         </div>
       ) : (

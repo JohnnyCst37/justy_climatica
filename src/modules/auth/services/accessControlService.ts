@@ -28,6 +28,44 @@ export const ROLE_LABELS: Record<AuthorizedEmailRole, string> = {
   lider: 'Aluno(a) Líder',
 };
 
+export const SCHOOL_CLASS_OPTIONS = [
+  '9º Ano A',
+  '9º Ano B',
+  '9º Ano C',
+  '9º Ano D',
+  '8º Ano A',
+  '8º Ano B',
+  '8º Ano C',
+  '7º Ano A',
+  '7º Ano B',
+  '6º Ano A',
+  '6º Ano B',
+];
+
+const DEFAULT_CLASS_PILLS = ['9º Ano A', '9º Ano B', '9º Ano C', '9º Ano D'];
+
+const GENERIC_CLASS_MARKERS = new Set([
+  'ADMIN-GERAL',
+  'PROFESSOR(A)',
+  'SUPER ADMIN',
+  'COORDENADOR(A)',
+  'DIRETOR(A)',
+  'ALUNO(A) LÍDER',
+  'DOCENTE',
+  'NOVO-CADASTRO',
+  '9ANO-MT',
+]);
+
+/** Extracts quick-select class pills from a teacher/student classGroup string. */
+export function parseTeacherClasses(raw?: string): string[] {
+  if (!raw) return DEFAULT_CLASS_PILLS;
+  const parts = raw
+    .split(/[,;/]+/)
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0 && !GENERIC_CLASS_MARKERS.has(item.toUpperCase()));
+  return parts.length > 0 ? Array.from(new Set(parts)) : DEFAULT_CLASS_PILLS;
+}
+
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
@@ -42,9 +80,12 @@ function getSeedSuperAdminEntries(): AuthorizedEmailEntry[] {
 
   return seeds.map((email) => ({
     email,
-    name: 'Super Admin · EE CM João Ribeiro Vilela',
+    name:
+      email === 'fernandesjohnnys@gmail.com'
+        ? 'Prof. Johnny Fernandes · Super Admin'
+        : 'Super Admin · EE CM João Ribeiro Vilela',
     role: 'super_admin',
-    classGroup: 'ADMIN-GERAL',
+    classGroup: '9º Ano A, 9º Ano B, 9º Ano C, 9º Ano D',
     status: 'approved',
     addedByEmail: 'system-seed',
     createdAt: 1730000000000,

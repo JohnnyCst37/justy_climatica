@@ -21,21 +21,37 @@ let cachedApp: FirebaseApp | null = null;
 export function getFirebaseApp(): FirebaseApp | null {
   if (!isFirebaseClientConfigured()) return null;
   if (cachedApp) return cachedApp;
-  cachedApp = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-  return cachedApp;
+  try {
+    cachedApp = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+    return cachedApp;
+  } catch {
+    return null;
+  }
 }
 
 export function getFirebaseAuthClient(): Auth | null {
-  const app = getFirebaseApp();
-  return app ? getAuth(app) : null;
+  try {
+    const app = getFirebaseApp();
+    return app ? getAuth(app) : null;
+  } catch {
+    return null;
+  }
 }
 
 export function getFirestoreClient(): Firestore | null {
-  const app = getFirebaseApp();
-  return app ? getFirestore(app) : null;
+  try {
+    const app = getFirebaseApp();
+    return app ? getFirestore(app) : null;
+  } catch {
+    return null;
+  }
 }
 
 export function getStorageClient(): FirebaseStorage | null {
-  const app = getFirebaseApp();
-  return app ? getStorage(app) : null;
+  try {
+    const app = getFirebaseApp();
+    return app ? getStorage(app) : null;
+  } catch {
+    return null;
+  }
 }

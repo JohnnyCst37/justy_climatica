@@ -10,6 +10,7 @@ import {
   ROLE_LABELS,
   canAccessSubmissionPortal,
   isStaffRole,
+  parseTeacherClasses,
 } from '../../auth/services/accessControlService';
 import { StaffEmailManagerModal } from '../../auth/components/StaffEmailManagerModal';
 import { useSchoolWorks } from '../hooks/useSchoolWorks';
@@ -38,6 +39,10 @@ export const StandaloneSubmissionPage: React.FC = () => {
 
   const hasAccess = canAccessSubmissionPortal(user);
   const isStaff = isStaffRole(user?.role);
+  const teacherClasses = useMemo(
+    () => parseTeacherClasses(user?.classCode),
+    [user?.classCode]
+  );
 
   useEffect(() => {
     if (user?.email && !hasAccess && !user.pendingApproval) {
@@ -226,7 +231,16 @@ export const StandaloneSubmissionPage: React.FC = () => {
                         <option value="diretor">Diretor(a)</option>
                         <option value="lider">Aluno(a) Líder de Grupo</option>
                       </select>
-                      <input value={regClassGroup} onChange={(e) => setRegClassGroup(e.target.value)} placeholder="Turma / Área (opcional)" className="px-3 py-2 text-xs border border-slate-300 rounded-xl" />
+                      <input
+                        value={regClassGroup}
+                        onChange={(e) => setRegClassGroup(e.target.value)}
+                        placeholder={
+                          regRole === 'lider'
+                            ? 'Sua Turma (ex: 9º Ano B)'
+                            : 'Turmas que leciona (opcional, ex: 9º A, 9º B, 9º C, 9º D)'
+                        }
+                        className="px-3 py-2 text-xs border border-slate-300 rounded-xl"
+                      />
                     </div>
                     <button type="submit" disabled={submittingAuth} className="w-full py-2.5 rounded-xl bg-emerald-800 hover:bg-emerald-700 disabled:opacity-60 text-white text-xs font-extrabold flex items-center justify-center gap-2">
                       <UserPlus size={15} /> {submittingAuth ? 'Enviando...' : 'Concluir Cadastro e Solicitar Aprovação'}
@@ -280,7 +294,7 @@ export const StandaloneSubmissionPage: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             <section className="lg:col-span-5 bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-2xs space-y-3">
               <span className="inline-block px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-900 text-[10px] font-extrabold uppercase tracking-wider">Passo 2 · Publicar Trabalho</span>
-              <SubmitWorkForm isLoggedIn={true} isStaffMode={isStaff} onRequestLogin={() => undefined} onSubmitWork={submitWork} />
+              <SubmitWorkForm isLoggedIn={true} isStaffMode={isStaff} userClasses={teacherClasses} onRequestLogin={() => undefined} onSubmitWork={submitWork} />
             </section>
             <section className="lg:col-span-7 bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-2xs space-y-3">
               <span className="inline-block px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-extrabold uppercase tracking-wider">Passo 3 · Galeria do Território</span>
@@ -290,7 +304,7 @@ export const StandaloneSubmissionPage: React.FC = () => {
         </main>
       )}
 
-      <CreateCommunityModal isOpen={createModalOpen} defaultOrientador={isStaff ? user?.nickname || '' : ''} onClose={() => setCreateModalOpen(false)} onCreateCommunity={addCommunity} onCreated={handleCommunityCreated} />
+      <CreateCommunityModal isOpen={createModalOpen} defaultOrientador={isStaff ? user?.nickname || '' : ''} userClasses={teacherClasses} onClose={() => setCreateModalOpen(false)} onCreateCommunity={addCommunity} onCreated={handleCommunityCreated} />
       {user?.email && isStaff && (
         <StaffEmailManagerModal isOpen={emailManagerOpen} actorEmail={user.email} actorRole={user.role} onClose={() => setEmailManagerOpen(false)} />
       )}

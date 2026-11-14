@@ -213,7 +213,11 @@ export const StaffEmailManagerModal: React.FC<StaffEmailManagerModalProps> = ({
             <input
               value={classGroup}
               onChange={(e) => setClassGroup(e.target.value)}
-              placeholder="Turma / Grupo (opcional)"
+              placeholder={
+                role === 'lider'
+                  ? 'Turma do aluno (ex: 9º Ano B)'
+                  : 'Várias turmas (opcional, ex: 9º A, B, C e D)'
+              }
               className="px-3 py-2 text-xs border border-slate-300 rounded-xl bg-white"
             />
 

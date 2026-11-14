@@ -5,10 +5,12 @@ import {
   MT_MUNICIPALITY_COORDS,
   type CreateCommunityInput,
 } from '../../../shared/services/customCommunitiesService';
+import { SCHOOL_CLASS_OPTIONS } from '../../auth/services/accessControlService';
 
 interface CreateCommunityModalProps {
   isOpen: boolean;
   defaultOrientador?: string;
+  userClasses?: string[];
   onClose: () => void;
   onCreateCommunity: (input: CreateCommunityInput) => Promise<CommunityNode>;
   onCreated: (community: CommunityNode) => void;
@@ -17,10 +19,15 @@ interface CreateCommunityModalProps {
 export const CreateCommunityModal: React.FC<CreateCommunityModalProps> = ({
   isOpen,
   defaultOrientador = '',
+  userClasses,
   onClose,
   onCreateCommunity,
   onCreated,
 }) => {
+  const quickClasses =
+    userClasses && userClasses.length > 0
+      ? userClasses
+      : ['9º Ano A', '9º Ano B', '9º Ano C', '9º Ano D'];
   const [titulo, setTitulo] = useState('');
   const [municipio, setMunicipio] = useState('Cuiabá');
   const [regiaoMT, setRegiaoMT] = useState('Baixada Cuiabana');
@@ -28,7 +35,7 @@ export const CreateCommunityModal: React.FC<CreateCommunityModalProps> = ({
   const [grupoId, setGrupoId] = useState<'grupo1' | 'grupo2' | 'grupo3'>('grupo2');
   const [equipeAlunos, setEquipeAlunos] = useState('');
   const [orientador, setOrientador] = useState(defaultOrientador);
-  const [serie, setSerie] = useState('9º Ano');
+  const [serie, setSerie] = useState(quickClasses[0] || '9º Ano A');
   const [quemSofreImpacto, setQuemSofreImpacto] = useState('');
   const [causaDoProblema, setCausaDoProblema] = useState('');
   const [solucoesComunitarias, setSolucoesComunitarias] = useState('');
@@ -151,21 +158,50 @@ export const CreateCommunityModal: React.FC<CreateCommunityModalProps> = ({
             </select>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-            <input
-              value={equipeAlunos}
-              onChange={(e) => setEquipeAlunos(e.target.value)}
-              placeholder="Alunos (separados por vírgula)"
-              required
-              className="sm:col-span-2 px-3 py-2 text-xs border border-slate-300 rounded-xl"
-            />
-            <input
-              value={serie}
-              onChange={(e) => setSerie(e.target.value)}
-              placeholder="Turma (ex: 9º B)"
-              required
-              className="px-3 py-2 text-xs border border-slate-300 rounded-xl"
-            />
+          <div className="space-y-1.5">
+            <div className="flex flex-wrap items-center gap-1">
+              <span className="text-[10px] font-bold uppercase tracking-wide text-slate-500 mr-1">
+                Turma da Pesquisa:
+              </span>
+              {quickClasses.map((turma) => (
+                <button
+                  key={turma}
+                  type="button"
+                  onClick={() => setSerie(turma)}
+                  className={`px-2 py-0.5 rounded-md text-[11px] font-bold border transition ${
+                    serie === turma
+                      ? 'bg-emerald-800 text-white border-emerald-800'
+                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-emerald-50 hover:border-emerald-300'
+                  }`}
+                >
+                  {turma}
+                </button>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <input
+                value={equipeAlunos}
+                onChange={(e) => setEquipeAlunos(e.target.value)}
+                placeholder="Alunos (separados por vírgula)"
+                required
+                className="sm:col-span-2 px-3 py-2 text-xs border border-slate-300 rounded-xl"
+              />
+              <input
+                list="create-community-turmas"
+                value={serie}
+                onChange={(e) => setSerie(e.target.value)}
+                placeholder="Turma (ex: 9º Ano B)"
+                required
+                className="px-3 py-2 text-xs border border-slate-300 rounded-xl font-semibold"
+              />
+            </div>
+
+            <datalist id="create-community-turmas">
+              {SCHOOL_CLASS_OPTIONS.map((turma) => (
+                <option key={turma} value={turma} />
+              ))}
+            </datalist>
           </div>
 
           <input

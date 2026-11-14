@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
   Award,
-  CheckCircle2,
   Images,
   Map as MapIcon,
   Mic,
@@ -10,7 +9,6 @@ import {
   Sparkles,
   Trees,
   Users,
-  Video,
   Volume2,
   Scale,
 } from 'lucide-react';
@@ -25,6 +23,7 @@ import { buildAgeAdaptedOverview } from '../../../shared/utils/ageNarrativeAdapt
 import { getCommunityMediaSlides } from '../../../shared/data/communityMediaCatalog';
 import { MapCanvas } from '../../map/components/MapCanvas';
 import { HeroMediaBanner } from './HeroMediaBanner';
+import { SessionVideosCard } from './SessionVideosCard';
 import { lyriaEngine } from '../../audio/services/lyriaSoundscapeEngine';
 
 interface GoogleStyleSearchStageProps {
@@ -128,9 +127,6 @@ export const GoogleStyleSearchStage: React.FC<GoogleStyleSearchStageProps> = ({
     onSendQuestion(freeQuery);
     setFreeQuery('');
   };
-
-  const videoWork = works.find((w) => w.workType === 'video' && Boolean(w.mediaUrl));
-  const sessionVideoUrl = videoWork?.mediaUrl || activeCommunity.videoEquipe.url;
 
   return (
     <div className={`min-h-full transition-colors duration-500 ${palette.pageBg} pb-12`}>
@@ -286,67 +282,15 @@ export const GoogleStyleSearchStage: React.FC<GoogleStyleSearchStageProps> = ({
             </form>
           </div>
 
-          {/* Convite do Agente para Vídeo + Mensagem de Reconhecimento + Quiz */}
-          <div className="rounded-3xl border border-emerald-800/20 bg-white p-5 sm:p-6 shadow-sm space-y-4">
-            {videoChoice === 'pending' && (
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1">
-                    <Video size={13} /> Passo Seguinte da Jornada
-                  </span>
-                  <h3 className="text-sm sm:text-base font-extrabold text-slate-900">
-                    Quer assistir a alguns dos vídeos que selecionamos para você nesta sessão?
-                  </h3>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    onClick={handleAcceptVideo}
-                    className="px-4 py-2 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-white text-xs sm:text-sm font-extrabold"
-                  >
-                    Sim, assistir vídeo
-                  </button>
-                  <button
-                    onClick={onOpenQuiz}
-                    className="px-4 py-2 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs sm:text-sm font-bold"
-                  >
-                    Não, ir ao Quiz
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {videoChoice === 'yes' && (
-              <div className="space-y-4">
-                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-start gap-3">
-                  <CheckCircle2 size={20} className="text-emerald-700 shrink-0 mt-0.5" />
-                  <p className="text-xs sm:text-sm font-bold text-emerald-950 leading-relaxed">
-                    “{PRAISE_BEFORE_VIDEO}”
-                  </p>
-                </div>
-
-                {sessionVideoUrl ? (
-                  <div className="aspect-video rounded-2xl overflow-hidden bg-slate-950 border border-slate-200">
-                    {sessionVideoUrl.includes('youtube') || sessionVideoUrl.includes('youtu.be') || sessionVideoUrl.includes('drive.google') ? (
-                      <iframe src={sessionVideoUrl} title={activeCommunity.titulo} className="w-full h-full border-0" allowFullScreen />
-                    ) : (
-                      <video src={sessionVideoUrl} controls playsInline className="w-full h-full object-contain" />
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-xs text-slate-600 bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                    O vídeo principal desta comunidade está sendo exibido nos slides do banner acima. Quando terminar, participe do desafio abaixo!
-                  </p>
-                )}
-
-                <button
-                  onClick={onOpenQuiz}
-                  className="w-full py-3 rounded-2xl bg-amber-600 hover:bg-amber-500 text-white text-sm font-extrabold flex items-center justify-center gap-2 shadow-sm"
-                >
-                  <Award size={17} /> Finalizar com Desafio Quiz (5 Perguntas)
-                </button>
-              </div>
-            )}
-          </div>
+          {/* Convite do Agente para Vídeos Selecionados + Mensagem de Reconhecimento + Quiz */}
+          <SessionVideosCard
+            activeCommunity={activeCommunity}
+            works={works}
+            videoChoice={videoChoice}
+            praiseText={PRAISE_BEFORE_VIDEO}
+            onAcceptVideo={handleAcceptVideo}
+            onOpenQuiz={onOpenQuiz}
+          />
         </div>
 
         {/* Coluna Lateral Direita (~35% — Estilo Cards de Fontes do Google AI Overview) */}

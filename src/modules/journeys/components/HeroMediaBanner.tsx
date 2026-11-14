@@ -16,6 +16,10 @@ import {
   getCommunityMediaSlides,
   type CommunityMediaSlide,
 } from '../../../shared/data/communityMediaCatalog';
+import {
+  isDirectVideoFileUrl,
+  toEmbedVideoUrl,
+} from '../../../shared/utils/videoEmbedResolver';
 
 interface HeroMediaBannerProps {
   community: CommunityNode;
@@ -23,15 +27,6 @@ interface HeroMediaBannerProps {
   isPlayingAudio: boolean;
   isAudioLoading: boolean;
   onToggleAudio: () => void;
-}
-
-function isDirectVideoUrl(url: string): boolean {
-  return (
-    url.startsWith('blob:') ||
-    url.startsWith('data:video/') ||
-    /\.(mp4|webm|mov)(\?.*)?$/i.test(url) ||
-    url.includes('firebasestorage.googleapis.com')
-  );
 }
 
 export const HeroMediaBanner: React.FC<HeroMediaBannerProps> = ({
@@ -77,7 +72,8 @@ export const HeroMediaBanner: React.FC<HeroMediaBannerProps> = ({
   };
 
   const isVideo = activeSlide.type === 'video' && Boolean(activeSlide.url);
-  const isDirectVideo = isVideo && isDirectVideoUrl(activeSlide.url);
+  const isDirectVideo = isVideo && isDirectVideoFileUrl(activeSlide.url);
+  const embedVideoUrl = isVideo && !isDirectVideo ? toEmbedVideoUrl(activeSlide.url) || activeSlide.url : '';
 
   return (
     <div className="relative w-full rounded-2xl overflow-hidden bg-slate-950 border border-slate-200/80 shadow-md transition-all">
@@ -93,7 +89,7 @@ export const HeroMediaBanner: React.FC<HeroMediaBannerProps> = ({
           />
         ) : isVideo ? (
           <iframe
-            src={activeSlide.url}
+            src={embedVideoUrl}
             title={activeSlide.title}
             className="w-full h-full border-0"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"

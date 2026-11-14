@@ -11,6 +11,18 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),
-},
+    },
+    dedupe: [
+      'firebase',
+      '@firebase/app',
+      '@firebase/component',
+      '@firebase/util',
+      '@firebase/logger',
+      '@firebase/auth',
+      '@firebase/firestore',
+      '@firebase/storage',
+      'react',
+      'react-dom',
+    ],
   },
 });

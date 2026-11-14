@@ -10,31 +10,16 @@ import {
   X,
 } from 'lucide-react';
 import type { SchoolWork } from '../../../shared/types/domain';
+import {
+  isDirectVideoFileUrl,
+  toEmbedVideoUrl,
+} from '../../../shared/utils/videoEmbedResolver';
 
 interface SchoolWorksGalleryProps {
   communityTitle: string;
   works: SchoolWork[];
   isProfessor: boolean;
   onApprove: (workId: string) => void;
-}
-
-function getEmbedUrl(url: string): string | null {
-  if (!url) return null;
-  const yt = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
-  if (yt?.[1]) return `https://www.youtube.com/embed/${yt[1]}?rel=0`;
-  const drive = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-  if (drive?.[1]) return `https://drive.google.com/file/d/${drive[1]}/preview`;
-  return null;
-}
-
-function isDirectVideoFile(url: string): boolean {
-  if (!url) return false;
-  return (
-    url.startsWith('blob:') ||
-    url.startsWith('data:video/') ||
-    /\.(mp4|webm|mov)(\?.*)?$/i.test(url) ||
-    url.includes('firebasestorage.googleapis.com')
-  );
 }
 
 function getTypeLabel(type: SchoolWork['workType']): string {
@@ -101,8 +86,8 @@ export const SchoolWorksGallery: React.FC<SchoolWorksGalleryProps> = ({
       ) : (
         <div className="space-y-2.5">
           {filtered.map((work) => {
-            const embed = work.workType === 'video' ? getEmbedUrl(work.mediaUrl) : null;
-            const directVideo = work.workType === 'video' && isDirectVideoFile(work.mediaUrl);
+            const embed = work.workType === 'video' ? toEmbedVideoUrl(work.mediaUrl) : null;
+            const directVideo = work.workType === 'video' && isDirectVideoFileUrl(work.mediaUrl);
 
             return (
               <div key={work.id} className="bg-white border border-slate-200 rounded-xl p-3 space-y-2">
