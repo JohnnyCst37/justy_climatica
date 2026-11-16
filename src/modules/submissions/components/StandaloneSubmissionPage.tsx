@@ -200,7 +200,11 @@ export const StandaloneSubmissionPage: React.FC = () => {
 
                 <button
                   type="button"
-                  onClick={() => void enterWithGoogle()}
+                  onClick={() =>
+                    emailInput.trim()
+                      ? void enterWithAuthorizedEmail(emailInput)
+                      : void enterWithGoogle()
+                  }
                   className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-extrabold flex items-center justify-center gap-2 shadow-xs"
                 >
                   <KeyRound size={16} /> Entrar ou Cadastrar-se com Google
@@ -280,6 +284,9 @@ export const StandaloneSubmissionPage: React.FC = () => {
                     <button type="submit" disabled={submittingAuth} className="w-full py-2.5 rounded-xl bg-emerald-800 hover:bg-emerald-700 disabled:opacity-60 text-white text-xs font-bold flex items-center justify-center gap-2">
                       <MailCheck size={15} /> {submittingAuth ? 'Verificando...' : 'Entrar com E-mail Aprovado'}
                     </button>
+                    <p className="text-[11px] text-slate-500 text-center">
+                      Super Admin (fernandesjohnnys@gmail.com) e e-mails aprovados entram direto digitando o e-mail aqui.
+                    </p>
                   </form>
                 )}
               </>

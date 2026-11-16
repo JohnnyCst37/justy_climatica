@@ -168,7 +168,23 @@ export async function loginWithGoogleAccount(): Promise<UserProfile> {
   }
 
   const provider = new GoogleAuthProvider();
-  const cred = await signInWithPopup(auth, provider);
+  let cred;
+  try {
+    cred = await signInWithPopup(auth, provider);
+  } catch (err) {
+    const code = (err as { code?: string })?.code || '';
+    if (
+      code === 'auth/unauthorized-domain' ||
+      code === 'auth/popup-blocked' ||
+      code === 'auth/operation-not-allowed'
+    ) {
+      const host = typeof window !== 'undefined' ? window.location.hostname : 'este domínio';
+      throw new Error(
+        `O popup Google não está habilitado para o domínio (${host}). Digite seu e-mail no campo abaixo para entrar imediatamente ou cadastre-se na aba ao lado.`
+      );
+    }
+    throw err;
+  }
   const cleanEmail = (cred.user.email || '').trim().toLowerCase();
   const authorized = cleanEmail ? await findAuthorizedEmail(cleanEmail) : null;
   const role: UserRole = authorized ? authorized.role : 'visitor';

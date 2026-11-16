@@ -34,12 +34,12 @@ export const SubmitWorkForm: React.FC<SubmitWorkFormProps> = ({
     userClasses && userClasses.length > 0
       ? userClasses
       : ['9º Ano A', '9º Ano B', '9º Ano C', '9º Ano D'];
-  const [schoolName, setSchoolName] = useState('EE CM João Ribeiro Vilela');
+  const schoolName = 'EE CM João Ribeiro Vilela';
   const [classGroup, setClassGroup] = useState(quickClasses[0] || '9º Ano A');
   const [studentTeam, setStudentTeam] = useState('');
   const [title, setTitle] = useState('');
   const [workType, setWorkType] = useState<SchoolWork['workType']>('video');
-  const [videoSourceMode, setVideoSourceMode] = useState<'file' | 'link'>('file');
+  const [videoSourceMode, setVideoSourceMode] = useState<'file' | 'link'>('link');
   const [description, setDescription] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const embedPreview = videoSourceMode === 'link' ? toEmbedVideoUrl(videoUrl) : null;
@@ -103,16 +103,17 @@ export const SubmitWorkForm: React.FC<SubmitWorkFormProps> = ({
     try {
       const cleanTeam = studentTeam.trim();
       const fullDescription = cleanTeam ? `Equipe: ${cleanTeam} — ${description}` : description;
+      const isLink = videoSourceMode === 'link';
       await onSubmitWork({
         schoolName,
         classGroup,
         title,
         workType,
         description: fullDescription,
-        videoUrl: workType === 'video' && videoSourceMode === 'link' ? videoUrl : undefined,
-        videoFile: workType === 'video' && videoSourceMode === 'file' && videoFile ? videoFile : undefined,
-        imageFileBase64: workType !== 'video' ? imageBase64 : undefined,
-        imageMimeType: workType !== 'video' ? imageMime : undefined,
+        videoUrl: isLink ? videoUrl : undefined,
+        videoFile: workType === 'video' && !isLink && videoFile ? videoFile : undefined,
+        imageFileBase64: workType !== 'video' && !isLink ? imageBase64 : undefined,
+        imageMimeType: workType !== 'video' && !isLink ? imageMime : undefined,
         onUploadProgress: setUploadProgress,
       });
       setTitle('');
@@ -147,58 +148,36 @@ export const SubmitWorkForm: React.FC<SubmitWorkFormProps> = ({
         </div>
       )}
 
-      <div className="space-y-1.5">
-        <div className="flex flex-wrap items-center gap-1">
-          <span className="text-[10px] font-bold uppercase tracking-wide text-slate-500 mr-1">
-            Turma:
-          </span>
-          {quickClasses.map((turma) => (
-            <button
-              key={turma}
-              type="button"
-              onClick={() => setClassGroup(turma)}
-              className={`px-2 py-0.5 rounded-md text-[11px] font-bold border transition ${
-                classGroup === turma
-                  ? 'bg-emerald-800 text-white border-emerald-800'
-                  : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-emerald-50 hover:border-emerald-300'
-              }`}
-            >
-              {turma}
-            </button>
-          ))}
-          <select
-            aria-label="Selecionar qualquer turma do 6º ao 9º Ano"
-            value={SCHOOL_CLASS_OPTIONS.includes(classGroup) ? classGroup : ''}
-            onChange={(e) => {
-              if (e.target.value) setClassGroup(e.target.value);
-            }}
-            className="px-2 py-0.5 rounded-md text-[11px] font-bold border border-slate-200 bg-white text-slate-700"
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+          Turma:
+        </span>
+        {quickClasses.map((turma) => (
+          <button
+            key={turma}
+            type="button"
+            onClick={() => setClassGroup(turma)}
+            className={`px-2 py-0.5 rounded-md text-[11px] font-bold border transition ${
+              classGroup === turma
+                ? 'bg-emerald-800 text-white border-emerald-800'
+                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-emerald-50 hover:border-emerald-300'
+            }`}
           >
-            <option value="">Todas (6º–9º)...</option>
-            {SCHOOL_CLASS_OPTIONS.map((turma) => (
-              <option key={turma} value={turma}>
-                {turma}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2">
-          <input value={schoolName} onChange={(e) => setSchoolName(e.target.value)} placeholder="Nome da escola" required className="px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg" />
-          <input
-            list="submit-work-turmas"
-            value={classGroup}
-            onChange={(e) => setClassGroup(e.target.value)}
-            placeholder="Turma deste trabalho (ex: 9º Ano A)"
-            required
-            className="px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg font-semibold"
-          />
-        </div>
-        <datalist id="submit-work-turmas">
+            {turma}
+          </button>
+        ))}
+        <select
+          aria-label="Selecionar turma do 6º ao 9º Ano"
+          value={classGroup}
+          onChange={(e) => setClassGroup(e.target.value)}
+          className="ml-auto px-2 py-0.5 rounded-md text-[11px] font-bold border border-slate-300 bg-white text-slate-800"
+        >
           {SCHOOL_CLASS_OPTIONS.map((turma) => (
-            <option key={turma} value={turma} />
+            <option key={turma} value={turma}>
+              {turma}
+            </option>
           ))}
-        </datalist>
+        </select>
       </div>
 
       <input
@@ -212,71 +191,77 @@ export const SubmitWorkForm: React.FC<SubmitWorkFormProps> = ({
       <select value={workType} onChange={(e) => setWorkType(e.target.value as SchoolWork['workType'])} className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg bg-white font-semibold">
         <option value="video">Vídeo Selecionado / Documentário (Link YouTube ou MP4 Baixado)</option>
         <option value="foto_campo">Foto de Apresentação / Campo</option>
-        <option value="slide_powerpoint">Imagem de Slide (PowerPoint / Canva)</option>
+        <option value="slide_powerpoint">Imagem ou Link de Slide (Canva / Drive / PPT)</option>
         <option value="infografico">Infográfico Científico</option>
       </select>
 
-      <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Título do vídeo ou trabalho da equipe" required className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg" />
+      <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Título do vídeo, link ou trabalho da equipe" required className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg" />
 
-      {workType === 'video' ? (
-        <div className="space-y-2">
-          <div className="grid grid-cols-2 gap-1 bg-slate-100 p-1 rounded-lg">
-            <button
-              type="button"
-              onClick={() => setVideoSourceMode('file')}
-              className={`py-1 px-2 rounded-md text-[11px] font-bold flex items-center justify-center gap-1 ${
-                videoSourceMode === 'file' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600'
-              }`}
-            >
-              <Film size={12} /> 🎬 Vídeo Baixado (MP4)
-            </button>
-            <button
-              type="button"
-              onClick={() => setVideoSourceMode('link')}
-              className={`py-1 px-2 rounded-md text-[11px] font-bold flex items-center justify-center gap-1 ${
-                videoSourceMode === 'link' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600'
-              }`}
-            >
-              <Link2 size={12} /> 🔗 Link do YouTube / Drive
-            </button>
-          </div>
-
-          {videoSourceMode === 'file' ? (
-            <label className="block border border-dashed border-slate-300 rounded-lg p-2.5 text-center cursor-pointer hover:border-emerald-600 bg-slate-50/70">
-              <input type="file" accept="video/mp4,video/webm,video/quicktime" onChange={handleVideoChange} required className="hidden" />
-              <span className="text-[11px] font-semibold text-slate-700 block">
-                {videoFile ? `🎬 ${videoFile.name} (${(videoFile.size / (1024 * 1024)).toFixed(1)} MB)` : 'Selecionar vídeo MP4 / WebM (até 50 MB)'}
-              </span>
-            </label>
-          ) : (
-            <div className="space-y-2">
-              <input type="url" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="https://youtube.com/watch?v=... ou https://youtu.be/..." required className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg" />
-              {embedPreview && (
-                <iframe
-                  src={embedPreview}
-                  title="Pré-visualização do vídeo selecionado"
-                  className="w-full h-36 rounded-lg border border-slate-200 bg-slate-950"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              )}
-            </div>
-          )}
+      <div className="space-y-2">
+        <div className="grid grid-cols-2 gap-1 bg-slate-100 p-1 rounded-lg">
+          <button
+            type="button"
+            onClick={() => setVideoSourceMode('link')}
+            className={`py-1.5 px-2 rounded-md text-[11px] font-bold flex items-center justify-center gap-1 ${
+              videoSourceMode === 'link' ? 'bg-white text-emerald-900 shadow-2xs' : 'text-slate-600'
+            }`}
+          >
+            <Link2 size={12} /> Inserir Link
+          </button>
+          <button
+            type="button"
+            onClick={() => setVideoSourceMode('file')}
+            className={`py-1.5 px-2 rounded-md text-[11px] font-bold flex items-center justify-center gap-1 ${
+              videoSourceMode === 'file' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600'
+            }`}
+          >
+            <UploadCloud size={12} /> Enviar Arquivo
+          </button>
         </div>
-      ) : (
-        <div className="space-y-2">
-          <label className="flex items-center justify-center gap-2 border border-dashed border-slate-300 rounded-lg p-2.5 cursor-pointer hover:border-emerald-600 bg-slate-50/70">
-            <ImageIcon size={14} className="text-emerald-700" />
-            <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleImageChange} required className="hidden" />
-            <span className="text-[11px] font-semibold text-slate-700">
-              {imageBase64 ? 'Imagem selecionada (clique para trocar)' : 'Selecionar imagem PNG, JPG ou WebP'}
+
+        {videoSourceMode === 'link' ? (
+          <div className="space-y-2">
+            <input
+              type="url"
+              value={videoUrl}
+              onChange={(e) => setVideoUrl(e.target.value)}
+              placeholder="Cole aqui o link do YouTube, Google Drive, Canva ou site..."
+              required
+              className="w-full px-2.5 py-2 text-xs border border-emerald-400 bg-emerald-50/30 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-emerald-600"
+            />
+            {embedPreview && (
+              <iframe
+                src={embedPreview}
+                title="Pré-visualização do vídeo selecionado"
+                className="w-full h-36 rounded-lg border border-slate-200 bg-slate-950"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            )}
+          </div>
+        ) : workType === 'video' ? (
+          <label className="block border border-dashed border-slate-300 rounded-lg p-2.5 text-center cursor-pointer hover:border-emerald-600 bg-slate-50/70">
+            <input type="file" accept="video/mp4,video/webm,video/quicktime" onChange={handleVideoChange} required className="hidden" />
+            <span className="text-[11px] font-semibold text-slate-700 block">
+              <Film size={13} className="inline mr-1 text-emerald-700" />
+              {videoFile ? `${videoFile.name} (${(videoFile.size / (1024 * 1024)).toFixed(1)} MB)` : 'Selecionar vídeo MP4 / WebM baixado (até 50 MB)'}
             </span>
           </label>
-          {imageBase64 && (
-            <img src={imageBase64} alt="Pré-visualização" className="w-full h-28 object-cover rounded-lg border border-slate-200" />
-          )}
-        </div>
-      )}
+        ) : (
+          <div className="space-y-2">
+            <label className="flex items-center justify-center gap-2 border border-dashed border-slate-300 rounded-lg p-2.5 cursor-pointer hover:border-emerald-600 bg-slate-50/70">
+              <ImageIcon size={14} className="text-emerald-700" />
+              <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleImageChange} required className="hidden" />
+              <span className="text-[11px] font-semibold text-slate-700">
+                {imageBase64 ? 'Imagem selecionada (clique para trocar)' : 'Selecionar imagem PNG, JPG ou WebP'}
+              </span>
+            </label>
+            {imageBase64 && (
+              <img src={imageBase64} alt="Pré-visualização" className="w-full h-28 object-cover rounded-lg border border-slate-200" />
+            )}
+          </div>
+        )}
+      </div>
 
       {sending && uploadProgress > 0 && uploadProgress < 100 && (
         <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">

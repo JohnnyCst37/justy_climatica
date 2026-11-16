@@ -1,5 +1,11 @@
 # 📜 PROGRESS_LOG — Diário de Engenharia (justy_climatica)
 
+## [16/11/2026] Desbloqueio de Rolagem Vertical, Campo de Link Imediato & Firebase Auth (Domínios Vercel + Anonymous Auth)
+- **Autenticação Firebase & Domínios Vercel (`authService.ts`, `StandaloneSubmissionPage.tsx`, Firebase Identity Toolkit):** Habilitado Login Anônimo (`signIn.anonymous.enabled = true`, corrigindo `accounts:signUp`) e adicionados os domínios Vercel em `authorizedDomains` no projeto `climate-justicy` (corrigindo `auth/unauthorized-domain`). Adicionado tratamento amigável em português para `auth/unauthorized-domain`/`auth/popup-blocked` e dica de login direto por e-mail aprovado/Super Admin.
+- **Correção da Tela Cortada embaixo (`index.html`):** Substituído `height: 100%; overflow: hidden` por `min-height: 100%; overflow-x: hidden; overflow-y: auto` e `#root` para `min-h-screen w-full`, liberando a rolagem vertical completa no portal `/enviar` e no palco da Mostra.
+- **Formulário Compacto com Link Aberto por Padrão (`SubmitWorkForm.tsx`):** Unificada a seleção de turma em uma linha (pílulas rápidas + menu 6º ao 9º Ano), ativada a aba `Inserir Link` por padrão para vídeos, slides, Canva, Drive ou sites externos, e exibido o campo URL + preview YouTube/Drive logo abaixo do título.
+- **Suporte a Links Externos na Galeria (`SchoolWorksGallery.tsx`):** Adicionada detecção `isLikelyImageUrl`, embed automático via `toEmbedVideoUrl` para links de Drive/YouTube em qualquer categoria e botão `Abrir Link / Apresentação Externa` para links gerais (Canva/sites).
+
 ## [14/11/2026] Grade Completa 6º ao 9º Ano (A, B, C e D) & Atalhos de Auto-Cadastro
 - **Grade Escolar Completa (`accessControlService.ts`, `StandaloneSubmissionPage.tsx`, `SubmitWorkForm.tsx`, `CreateCommunityModal.tsx`):** Expandido `SCHOOL_CLASS_OPTIONS` para todas as 16 turmas do **6º ao 9º Ano (A, B, C e D)**, adicionados atalhos em 1 clique por ano escolar (`+ 6º Ano (A-D)` ao `+ 9º Ano (A-D)`) no auto-cadastro docente (`StandaloneSubmissionPage.tsx`) e seletor dropdown rápido `Todas (6º–9º)...` nos formulários de Passo 1 e Passo 2.
 

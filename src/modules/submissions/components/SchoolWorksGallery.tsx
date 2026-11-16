@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   CheckCircle2,
   Clock,
+  ExternalLink,
   Image as ImageIcon,
   Maximize2,
   Presentation,
@@ -33,6 +34,16 @@ function getTypeLabel(type: SchoolWork['workType']): string {
     case 'foto_campo':
       return 'Foto de Campo';
   }
+}
+
+function isLikelyImageUrl(url: string): boolean {
+  if (!url) return false;
+  return (
+    url.startsWith('data:image/') ||
+    /\.(png|jpe?g|webp|gif|svg)(\?.*)?$/i.test(url) ||
+    url.includes('unsplash.com') ||
+    url.startsWith('/images/')
+  );
 }
 
 export const SchoolWorksGallery: React.FC<SchoolWorksGalleryProps> = ({
@@ -86,8 +97,10 @@ export const SchoolWorksGallery: React.FC<SchoolWorksGalleryProps> = ({
       ) : (
         <div className="space-y-2.5">
           {filtered.map((work) => {
-            const embed = work.workType === 'video' ? toEmbedVideoUrl(work.mediaUrl) : null;
+            const embed = toEmbedVideoUrl(work.mediaUrl);
             const directVideo = work.workType === 'video' && isDirectVideoFileUrl(work.mediaUrl);
+            const isImage = !directVideo && !embed && isLikelyImageUrl(work.mediaUrl);
+            const isExternalLink = /^https?:\/\//i.test(work.mediaUrl);
 
             return (
               <div key={work.id} className="bg-white border border-slate-200 rounded-xl p-3 space-y-2">
@@ -111,7 +124,7 @@ export const SchoolWorksGallery: React.FC<SchoolWorksGalleryProps> = ({
                   )}
                 </div>
 
-                {work.workType === 'video' && directVideo ? (
+                {directVideo ? (
                   <div className="rounded-lg overflow-hidden aspect-video bg-slate-950 border border-slate-200">
                     <video
                       src={work.mediaUrl}
@@ -121,7 +134,7 @@ export const SchoolWorksGallery: React.FC<SchoolWorksGalleryProps> = ({
                       className="w-full h-full object-contain"
                     />
                   </div>
-                ) : work.workType === 'video' && embed ? (
+                ) : embed ? (
                   <div className="rounded-lg overflow-hidden aspect-video bg-slate-900 border border-slate-200">
                     <iframe
                       src={embed}
@@ -130,7 +143,7 @@ export const SchoolWorksGallery: React.FC<SchoolWorksGalleryProps> = ({
                       allowFullScreen
                     />
                   </div>
-                ) : work.mediaUrl ? (
+                ) : isImage ? (
                   <div className="relative group">
                     <img
                       src={work.mediaUrl}
@@ -145,9 +158,29 @@ export const SchoolWorksGallery: React.FC<SchoolWorksGalleryProps> = ({
                       <Maximize2 size={12} />
                     </button>
                   </div>
+                ) : work.mediaUrl ? (
+                  <a
+                    href={work.mediaUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-900 text-xs font-bold"
+                  >
+                    <ExternalLink size={14} /> Abrir Link / Apresentação Externa
+                  </a>
                 ) : null}
 
                 <p className="text-[11px] text-slate-600 leading-snug">{work.description}</p>
+
+                {isExternalLink && (isImage || Boolean(embed)) && (
+                  <a
+                    href={work.mediaUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800 hover:underline"
+                  >
+                    <ExternalLink size={11} /> Abrir link original
+                  </a>
+                )}
 
                 {isProfessor && work.status === 'pending' && (
                   <button
