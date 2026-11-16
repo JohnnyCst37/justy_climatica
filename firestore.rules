@@ -36,26 +36,14 @@ service cloud.firestore {
 
     // Trabalhos dos alunos ("Que escola está falando hoje desta comunidade?")
     match /school_works/{workId} {
-      allow read: if resource.data.status == 'approved'
-        || (isSignedIn() && resource.data.authorUid == request.auth.uid)
-        || isProfessor();
+      allow read: if resource.data.status == 'approved' || isSignedIn();
 
-      allow create: if isSignedIn()
-        && request.resource.data.authorUid == request.auth.uid
+      allow create, update: if isSignedIn()
         && request.resource.data.status in ['pending', 'approved']
         && request.resource.data.schoolName is string
         && request.resource.data.communityId is string;
 
-      allow update: if isProfessor() || (
-        isSignedIn()
-        && resource.data.authorUid == request.auth.uid
-        && resource.data.status == 'pending'
-        && request.resource.data.status == 'pending'
-      );
-
-      allow delete: if isProfessor() || (
-        isSignedIn() && resource.data.authorUid == request.auth.uid
-      );
+      allow delete: if isSignedIn();
     }
 
     // Perfil LGPD pseudonimizado (apenas apelido, turma e papel — sem PII obrigatória)

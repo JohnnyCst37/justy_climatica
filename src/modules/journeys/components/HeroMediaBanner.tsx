@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
+  ExternalLink,
+  Film,
   Maximize2,
   Volume2,
   VolumeX,
@@ -39,10 +41,6 @@ export const HeroMediaBanner: React.FC<HeroMediaBannerProps> = ({
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
 
-  useEffect(() => {
-    setCurrentSlideIndex(0);
-  }, [community.id]);
-
   const baseSlides = getCommunityMediaSlides(
     community.id,
     community.infografico.url,
@@ -60,7 +58,11 @@ export const HeroMediaBanner: React.FC<HeroMediaBannerProps> = ({
       caption: w.description,
     }));
 
-  const slides = [...baseSlides, ...studentSlides];
+  useEffect(() => {
+    setCurrentSlideIndex(0);
+  }, [community.id, studentSlides.length]);
+
+  const slides = [...studentSlides, ...baseSlides];
   const activeSlide: CommunityMediaSlide = slides[currentSlideIndex] || slides[0];
 
   const prevSlide = () => {
@@ -71,40 +73,75 @@ export const HeroMediaBanner: React.FC<HeroMediaBannerProps> = ({
     setCurrentSlideIndex((prev) => (prev < slides.length - 1 ? prev + 1 : 0));
   };
 
-  const isVideo = activeSlide.type === 'video' && Boolean(activeSlide.url);
-  const isDirectVideo = isVideo && isDirectVideoFileUrl(activeSlide.url);
-  const embedVideoUrl = isVideo && !isDirectVideo ? toEmbedVideoUrl(activeSlide.url) || activeSlide.url : '';
+  const activeUrl = activeSlide?.url || '';
+  const isDirectVideo =
+    Boolean(activeUrl) &&
+    (activeSlide?.type === 'video'
+      ? isDirectVideoFileUrl(activeUrl)
+      : /\.(mp4|webm|mov)(\?.*)?$/i.test(activeUrl) || activeUrl.startsWith('data:video/'));
+  const embedVideoUrl = Boolean(activeUrl) && !isDirectVideo ? toEmbedVideoUrl(activeUrl) || '' : '';
+  const isImage =
+    Boolean(activeUrl) &&
+    !isDirectVideo &&
+    !embedVideoUrl &&
+    (activeUrl.startsWith('data:image/') ||
+      activeUrl.startsWith('/images/') ||
+      /\.(png|jpe?g|webp|gif|svg)(\?.*)?$/i.test(activeUrl) ||
+      activeUrl.includes('unsplash.com') ||
+      activeUrl.includes('firebasestorage.googleapis.com'));
+  const isExternalWorkLink =
+    Boolean(activeUrl) && /^https?:\/\//i.test(activeUrl) && !isDirectVideo && !embedVideoUrl && !isImage;
 
   return (
     <div className="relative w-full rounded-2xl overflow-hidden bg-slate-950 border border-slate-200/80 shadow-md transition-all">
       {/* Janela de Mídia (16:10 / Altura Nobre) */}
       <div className="relative w-full aspect-[16/10] sm:aspect-[16/9] max-h-[360px] bg-slate-950 flex items-center justify-center overflow-hidden">
-        {isVideo && isDirectVideo ? (
+        {isDirectVideo ? (
           <video
-            src={activeSlide.url}
+            key={activeUrl}
+            src={activeUrl}
             controls
             playsInline
             preload="metadata"
             className="w-full h-full object-contain bg-black"
           />
-        ) : isVideo ? (
+        ) : embedVideoUrl ? (
           <iframe
+            key={embedVideoUrl}
             src={embedVideoUrl}
             title={activeSlide.title}
             className="w-full h-full border-0"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
           />
-        ) : activeSlide.url ? (
+        ) : isExternalWorkLink ? (
+          <div className="flex flex-col items-center justify-center p-6 text-center text-white space-y-3 bg-gradient-to-br from-emerald-950 via-slate-900 to-slate-950 w-full h-full">
+            <Sparkles size={32} className="text-amber-300" />
+            <div className="max-w-md space-y-1">
+              <p className="text-xs font-bold uppercase tracking-wider text-emerald-300">
+                {activeSlide.subtitle}
+              </p>
+              <p className="text-sm font-extrabold">{activeSlide.title}</p>
+            </div>
+            <a
+              href={activeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold inline-flex items-center gap-2 shadow-sm"
+            >
+              <ExternalLink size={15} /> Abrir Apresentação / Trabalho Externo em Nova Guia
+            </a>
+          </div>
+        ) : isImage ? (
           <img
-            src={activeSlide.url}
+            src={activeUrl}
             alt={activeSlide.title}
             className="w-full h-full object-cover transition-transform duration-500"
           />
         ) : (
           <div className="flex flex-col items-center justify-center p-6 text-center text-slate-300">
             <ImageIcon size={36} className="text-emerald-400 mb-2 opacity-80" />
-            <p className="text-xs font-semibold">{activeSlide.title}</p>
+            <p className="text-xs font-semibold">{activeSlide?.title}</p>
           </div>
         )}
 
@@ -188,6 +225,42 @@ export const HeroMediaBanner: React.FC<HeroMediaBannerProps> = ({
           </p>
         </div>
       </div>
+
+      {/* Faixa de Seleção Rápida (Vídeos, Slides & Imagens dos Alunos + Sessão) */}
+      {slides.length > 0 && (
+        <div className="bg-white border-t border-slate-200/80 px-3 py-2 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+          <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 shrink-0 mr-1">
+            Mídias ({slides.length}):
+          </span>
+          {slides.map((s, idx) => {
+            const active = idx === currentSlideIndex;
+            const isStudentWork = s.id.startsWith('work-');
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => setCurrentSlideIndex(idx)}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1.5 shrink-0 border transition ${
+                  active
+                    ? 'bg-emerald-800 text-white border-emerald-800 shadow-2xs'
+                    : isStudentWork
+                    ? 'bg-amber-50 text-amber-950 border-amber-200 hover:bg-amber-100'
+                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-emerald-50'
+                }`}
+              >
+                {s.type === 'video' ? (
+                  <Film size={12} />
+                ) : s.type === 'photo' ? (
+                  <ImageIcon size={12} />
+                ) : (
+                  <Sparkles size={12} />
+                )}
+                <span className="truncate max-w-[180px]">{s.title}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Barra de Áudio Fluido do Guia Gemini (Abaixo da Janela Visual) */}
       <div className="bg-[#f5f2e8] px-3.5 py-2.5 flex items-center justify-between gap-3 border-t border-slate-200/90">

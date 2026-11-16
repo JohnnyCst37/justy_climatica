@@ -25,7 +25,12 @@ type AssistantStructuredResponse = z.infer<typeof assistantStructuredResponseSch
 const ttsAudioCache = new Map<string, { audioUrl: string }>();
 
 function getServerApiKey(): string {
-  const key = process.env.GEMINI_API_KEY || process.env.API_KEY;
+  const key = (
+    process.env.GEMINI_API_KEY ||
+    process.env.API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    ''
+  ).trim();
   if (!key) {
     throw new Error('GEMINI_API_KEY_MISSING');
   }

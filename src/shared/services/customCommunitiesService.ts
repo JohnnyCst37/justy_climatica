@@ -1,7 +1,15 @@
+import { signInAnonymously } from 'firebase/auth';
 import { collection, doc, getDocs, setDoc } from 'firebase/firestore';
-import { getFirestoreClient } from '../config/firebaseClient';
+import { getFirebaseAuthClient, getFirestoreClient } from '../config/firebaseClient';
 import { CURATED_COMMUNITIES } from '../data/communityRepository';
 import type { BiomaType, CommunityNode } from '../types/domain';
+
+async function ensureCommunitiesAuth(): Promise<void> {
+  const auth = getFirebaseAuthClient();
+  if (auth && !auth.currentUser) {
+    await signInAnonymously(auth).catch(() => undefined);
+  }
+}
 
 const LOCAL_COMMUNITIES_KEY = 'justy_custom_communities_v1';
 export const COMMUNITIES_UPDATED_EVENT = 'justy-communities-updated';
@@ -94,13 +102,25 @@ export async function loadAllCommunities(): Promise<CommunityNode[]> {
   if (!db) return mergeCommunities(local);
 
   try {
+    await ensureCommunitiesAuth();
     const snap = await getDocs(collection(db, 'communities'));
-    const remote = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<CommunityNode, 'id'>) }));
-    const combined = [...local];
-    for (const r of remote) {
-      if (!combined.some((l) => l.id === r.id)) combined.push(r);
+    const remote = snap.docs.map((d) => ({
+      id: d.id,
+      ...(d.data() as Omit<CommunityNode, 'id'>),
+    }));
+
+    const unsynced = local.filter((l) => !remote.some((r) => r.id === l.id));
+    if (unsynced.length > 0) {
+      await Promise.all(
+        unsynced.map((node) =>
+          setDoc(doc(db, 'communities', node.id), { ...node, status: 'published' }).catch(
+            () => undefined
+          )
+        )
+      );
     }
-    return mergeCommunities(combined);
+
+    return mergeCommunities([...remote, ...unsynced]);
   } catch {
     return mergeCommunities(local);
   }
@@ -211,6 +231,7 @@ export async function createCustomCommunity(input: CreateCommunityInput): Promis
 
   const db = getFirestoreClient();
   if (db) {
+    await ensureCommunitiesAuth();
     await setDoc(doc(db, 'communities', id), { ...node, status: 'published' }).catch(() => undefined);
   }
 
