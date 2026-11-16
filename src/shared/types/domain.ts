@@ -179,8 +179,31 @@ export interface SchoolWork {
   description: string;
   authorUid: string;
   authorLabel: string;
-  status: 'pending' | 'approved';
+  status: 'pending' | 'approved' | 'deleted';
   createdAt: number;
+}
+
+export type VisitorCategory =
+  | 'estudante'
+  | 'professor'
+  | 'coordenador'
+  | 'diretor'
+  | 'dre'
+  | 'outro';
+
+export interface PresenceSessionRecord {
+  id: string;
+  name: string;
+  category: VisitorCategory;
+  classGroup: string;
+  age?: number;
+  startedAt: number;
+  lastSeenAt: number;
+  endedAt?: number;
+  activeCommunityTitle?: string;
+  activeTheme?: string;
+  area: 'mostra' | 'portal_envio';
+  isOnline: boolean;
 }
 
 export interface AssistantReply {

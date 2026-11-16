@@ -3,8 +3,10 @@ import type { CommunityNode, SchoolWork, UserProfile } from '../../../shared/typ
 import { isStaffRole } from '../../auth/services/accessControlService';
 import {
   approveSchoolWork,
+  deleteSchoolWork,
   fetchCommunityWorks,
   submitSchoolWork,
+  updateSchoolWork,
 } from '../services/worksService';
 
 export function useSchoolWorks(community: CommunityNode | null, user: UserProfile | null) {
@@ -65,5 +67,22 @@ export function useSchoolWorks(community: CommunityNode | null, user: UserProfil
     );
   }, []);
 
-  return { works, loading, reload, submitWork, approveWork };
+  const updateWork = useCallback(
+    async (
+      work: SchoolWork,
+      updates: Partial<Pick<SchoolWork, 'title' | 'classGroup' | 'workType' | 'mediaUrl' | 'description'>>
+    ) => {
+      const updated = await updateSchoolWork(work.id, updates, work);
+      setWorks((prev) => prev.map((w) => (w.id === work.id ? updated : w)));
+      return updated;
+    },
+    []
+  );
+
+  const deleteWork = useCallback(async (work: SchoolWork) => {
+    await deleteSchoolWork(work);
+    setWorks((prev) => prev.filter((w) => w.id !== work.id));
+  }, []);
+
+  return { works, loading, reload, submitWork, approveWork, updateWork, deleteWork };
 }

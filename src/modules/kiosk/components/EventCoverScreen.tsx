@@ -1,13 +1,33 @@
 import React, { useState } from 'react';
 import { Maximize, Sparkles, UserCheck, Volume2 } from 'lucide-react';
-import type { AgeGroupKey } from '../../../shared/types/domain';
+import type { AgeGroupKey, VisitorCategory } from '../../../shared/types/domain';
+import { SCHOOL_CLASS_OPTIONS } from '../../auth/services/accessControlService';
+import {
+  VISITOR_CATEGORY_LABELS,
+  defaultGroupForCategory,
+} from '../../presence/services/presenceService';
 import { lyriaEngine } from '../../audio/services/lyriaSoundscapeEngine';
 
 interface EventCoverScreenProps {
-  onStartVisitor: (input: { nickname: string; age: number; ageGroup: AgeGroupKey }) => Promise<void>;
+  onStartVisitor: (input: {
+    nickname: string;
+    age: number;
+    ageGroup: AgeGroupKey;
+    category: VisitorCategory;
+    classGroup: string;
+  }) => Promise<void>;
   onSpeakWelcome: (text: string) => void;
   isSpeakingWelcome: boolean;
 }
+
+const CATEGORY_ORDER: VisitorCategory[] = [
+  'estudante',
+  'professor',
+  'coordenador',
+  'diretor',
+  'dre',
+  'outro',
+];
 
 const AGE_GROUPS: Array<{ key: AgeGroupKey; label: string; sampleAge: number; desc: string }> = [
   { key: '10-12', label: '10 a 12 anos', sampleAge: 11, desc: 'História visual e curiosidades' },
@@ -25,9 +45,16 @@ export const EventCoverScreen: React.FC<EventCoverScreenProps> = ({
   isSpeakingWelcome,
 }) => {
   const [nickname, setNickname] = useState('');
+  const [category, setCategory] = useState<VisitorCategory>('estudante');
+  const [classGroup, setClassGroup] = useState<string>('9º Ano A');
   const [ageGroup, setAgeGroup] = useState<AgeGroupKey>('13-15');
   const [exactAge, setExactAge] = useState<number>(14);
   const [starting, setStarting] = useState(false);
+
+  const handleSelectCategory = (nextCat: VisitorCategory) => {
+    setCategory(nextCat);
+    setClassGroup(defaultGroupForCategory(nextCat));
+  };
 
   const handleSelectAgeGroup = (group: { key: AgeGroupKey; sampleAge: number }) => {
     setAgeGroup(group.key);
@@ -51,6 +78,8 @@ export const EventCoverScreen: React.FC<EventCoverScreenProps> = ({
         nickname: nickname.trim() || 'Visitante da Mostra',
         age: exactAge,
         ageGroup,
+        category,
+        classGroup,
       });
     } finally {
       setStarting(false);
@@ -122,6 +151,41 @@ export const EventCoverScreen: React.FC<EventCoverScreenProps> = ({
               required
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600"
             />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-700 block">Você é:</label>
+            <div className="flex flex-wrap gap-1.5">
+              {CATEGORY_ORDER.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => handleSelectCategory(cat)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition ${
+                    category === cat
+                      ? 'bg-emerald-800 border-emerald-800 text-white'
+                      : 'bg-white border-slate-300 text-slate-700 hover:border-emerald-500'
+                  }`}
+                >
+                  {VISITOR_CATEGORY_LABELS[cat]}
+                </button>
+              ))}
+            </div>
+            {category === 'estudante' && (
+              <select
+                aria-label="Selecione sua Turma"
+                value={classGroup}
+                onChange={(e) => setClassGroup(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs font-bold text-slate-800"
+              >
+                {SCHOOL_CLASS_OPTIONS.map((turma) => (
+                  <option key={turma} value={turma}>
+                    Turma: {turma}
+                  </option>
+                ))}
+                <option value="Outra Turma / Escola">Outra Turma / Escola</option>
+              </select>
+            )}
           </div>
 
           <div className="space-y-2">

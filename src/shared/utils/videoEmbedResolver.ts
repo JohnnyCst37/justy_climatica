@@ -24,6 +24,7 @@ export function toEmbedVideoUrl(rawUrl: string): string | null {
 export function isDirectVideoFileUrl(rawUrl: string): boolean {
   if (!rawUrl) return false;
   return (
+    rawUrl.startsWith('firestore-video://') ||
     rawUrl.startsWith('blob:') ||
     rawUrl.startsWith('data:video/') ||
     /\.(mp4|webm|mov)(\?.*)?$/i.test(rawUrl) ||

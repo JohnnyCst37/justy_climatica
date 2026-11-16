@@ -1,7 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Award, Lock, RotateCcw, Volume2, VolumeX } from 'lucide-react';
 import { useCommunitiesList } from './shared/hooks/useCommunitiesList';
-import type { AgeGroupKey, ThemeSessionKey } from './shared/types/domain';
+import type { AgeGroupKey, ThemeSessionKey, VisitorCategory } from './shared/types/domain';
 import { BioPatrimonioLogo } from './shared/components/Icons';
 import { resolveBiomePalette } from './shared/utils/biomeThemePalettes';
 import { useAuthSession } from './modules/auth/hooks/useAuthSession';
@@ -12,6 +12,12 @@ import { lyriaEngine } from './modules/audio/services/lyriaSoundscapeEngine';
 import { EventCoverScreen } from './modules/kiosk/components/EventCoverScreen';
 import { KioskLockModal } from './modules/kiosk/components/KioskLockModal';
 import { StandaloneSubmissionPage } from './modules/submissions/components/StandaloneSubmissionPage';
+import { LiveAccessDashboardPage } from './modules/presence/components/LiveAccessDashboardPage';
+import {
+  endPresenceSession,
+  heartbeatPresenceSession,
+  startPresenceSession,
+} from './modules/presence/services/presenceService';
 import { GoogleStyleSearchStage } from './modules/journeys/components/GoogleStyleSearchStage';
 import { ClimateQuizModal } from './modules/quiz/components/ClimateQuizModal';
 
@@ -23,11 +29,26 @@ function checkIsSubmitRoute(): boolean {
   );
 }
 
+function checkIsAccessDashboardRoute(): boolean {
+  if (typeof window === 'undefined') return false;
+  return (
+    window.location.pathname.startsWith('/acessos') ||
+    new URLSearchParams(window.location.search).get('modo') === 'acessos'
+  );
+}
+
 export const App: React.FC = () => {
   const { communities: allCommunities } = useCommunitiesList();
   const [isSubmitRoute, setIsSubmitRoute] = useState<boolean>(checkIsSubmitRoute);
+  const [isAccessRoute, setIsAccessRoute] = useState<boolean>(checkIsAccessDashboardRoute);
   const [selectedId, setSelectedId] = useState<string>(allCommunities[0]?.id || '');
-  const [visitorSession, setVisitorSession] = useState<{ age: number; ageGroup: AgeGroupKey } | null>(null);
+  const [visitorSession, setVisitorSession] = useState<{
+    age: number;
+    ageGroup: AgeGroupKey;
+    category: VisitorCategory;
+    classGroup: string;
+  } | null>(null);
+  const presenceSessionIdRef = useRef<string>('');
   const [activeTheme, setActiveTheme] = useState<ThemeSessionKey>('justica');
   const [kioskActive, setKioskActive] = useState(false);
   const [unlockedByProfessor, setUnlockedByProfessor] = useState(false);
@@ -38,7 +59,10 @@ export const App: React.FC = () => {
   const { user, enterWithClassroom, logout } = useAuthSession();
 
   useEffect(() => {
-    const onPopState = () => setIsSubmitRoute(checkIsSubmitRoute());
+    const onPopState = () => {
+      setIsSubmitRoute(checkIsSubmitRoute());
+      setIsAccessRoute(checkIsAccessDashboardRoute());
+    };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
@@ -83,20 +107,72 @@ export const App: React.FC = () => {
   );
 
   const handleStartVisitor = useCallback(
-    async (input: { nickname: string; age: number; ageGroup: AgeGroupKey }) => {
-      await enterWithClassroom(input.nickname, 'MOSTRA-2026');
-      setVisitorSession({ age: input.age, ageGroup: input.ageGroup });
+    async (input: {
+      nickname: string;
+      age: number;
+      ageGroup: AgeGroupKey;
+      category: VisitorCategory;
+      classGroup: string;
+    }) => {
+      await enterWithClassroom(input.nickname, input.classGroup || 'MOSTRA-2026');
+      setVisitorSession({
+        age: input.age,
+        ageGroup: input.ageGroup,
+        category: input.category,
+        classGroup: input.classGroup,
+      });
       setKioskActive(true);
       setUnlockedByProfessor(false);
       setActiveTheme('justica');
       setQuizOpen(false);
+      const sid = await startPresenceSession({
+        name: input.nickname,
+        category: input.category,
+        classGroup: input.classGroup,
+        age: input.age,
+        area: 'mostra',
+        activeCommunityTitle: activeCommunity?.titulo,
+        activeTheme: 'justica',
+      });
+      presenceSessionIdRef.current = sid;
     },
-    [enterWithClassroom]
+    [enterWithClassroom, activeCommunity?.titulo]
   );
+
+  useEffect(() => {
+    if (!visitorSession || !presenceSessionIdRef.current) return;
+    void heartbeatPresenceSession(presenceSessionIdRef.current, {
+      activeCommunityTitle: activeCommunity?.titulo,
+      activeTheme,
+    });
+    const timer = window.setInterval(() => {
+      if (presenceSessionIdRef.current) {
+        void heartbeatPresenceSession(presenceSessionIdRef.current, {
+          activeCommunityTitle: activeCommunity?.titulo,
+          activeTheme,
+        });
+      }
+    }, 20000);
+    return () => window.clearInterval(timer);
+  }, [visitorSession, activeCommunity?.titulo, activeTheme]);
+
+  useEffect(() => {
+    const onUnload = () => {
+      if (presenceSessionIdRef.current) {
+        void endPresenceSession(presenceSessionIdRef.current);
+      }
+    };
+    window.addEventListener('beforeunload', onUnload);
+    return () => window.removeEventListener('beforeunload', onUnload);
+  }, []);
 
   const handleFinishVisitorCycle = useCallback(() => {
     assistant.stopAudio();
     lyriaEngine.setVoiceDucking(false);
+    if (presenceSessionIdRef.current) {
+      void endPresenceSession(presenceSessionIdRef.current);
+      presenceSessionIdRef.current = '';
+    }
     setQuizOpen(false);
     setVisitorSession(null);
     setKioskActive(false);
@@ -108,6 +184,10 @@ export const App: React.FC = () => {
     setLyriaMuted(next);
     lyriaEngine.setMuted(next);
   }, [lyriaMuted]);
+
+  if (isAccessRoute) {
+    return <LiveAccessDashboardPage />;
+  }
 
   if (isSubmitRoute) {
     return <StandaloneSubmissionPage />;

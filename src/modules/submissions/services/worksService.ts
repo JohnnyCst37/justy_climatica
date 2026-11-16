@@ -2,20 +2,24 @@ import { signInAnonymously } from 'firebase/auth';
 import {
   addDoc,
   collection,
+  deleteDoc,
   doc,
   getDocs,
   query,
+  setDoc,
   updateDoc,
   where,
 } from 'firebase/firestore';
-import { getDownloadURL, ref, uploadBytesResumable } from 'firebase/storage';
 import {
   getFirebaseAuthClient,
   getFirestoreClient,
-  getStorageClient,
 } from '../../../shared/config/firebaseClient';
 import { postApiJson } from '../../../shared/services/apiClient';
 import type { CommunityNode, SchoolWork } from '../../../shared/types/domain';
+import {
+  deleteFirestoreVideoChunks,
+  uploadVideoToFirestoreChunks,
+} from './firestoreVideoStorage';
 
 async function ensureWorksAuth(): Promise<void> {
   const auth = getFirebaseAuthClient();
@@ -50,6 +54,7 @@ function compressImageDataUrl(dataUrl: string, maxWidth = 1280): Promise<string>
 }
 
 const LOCAL_WORKS_KEY = 'justy_school_works_v1';
+const LOCAL_DELETED_WORKS_KEY = 'justy_deleted_work_ids_v1';
 
 function loadLocalWorks(): SchoolWork[] {
   try {
@@ -63,6 +68,24 @@ function loadLocalWorks(): SchoolWork[] {
 function saveLocalWorks(works: SchoolWork[]): void {
   try {
     localStorage.setItem(LOCAL_WORKS_KEY, JSON.stringify(works));
+  } catch {
+    // ignore storage errors
+  }
+}
+
+function loadDeletedWorkIds(): string[] {
+  try {
+    const raw = localStorage.getItem(LOCAL_DELETED_WORKS_KEY);
+    return raw ? (JSON.parse(raw) as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function markWorkIdDeleted(id: string): void {
+  try {
+    const next = Array.from(new Set([id, ...loadDeletedWorkIds()]));
+    localStorage.setItem(LOCAL_DELETED_WORKS_KEY, JSON.stringify(next));
   } catch {
     // ignore storage errors
   }
@@ -91,25 +114,49 @@ export async function fetchCommunityWorks(
   isProfessor = false
 ): Promise<SchoolWork[]> {
   const seed = buildSeedWorkForCommunity(community);
+  const deletedIds = new Set(loadDeletedWorkIds());
   const localAll = loadLocalWorks();
   const localMatches = localAll.filter((w) => w.communityId === community.id);
+  const localSeed = localMatches.find((l) => l.id === seed.id);
   const db = getFirestoreClient();
 
   if (!db) {
-    return [...localMatches.sort((a, b) => b.createdAt - a.createdAt), seed];
+    const base = localMatches
+      .filter((w) => w.id !== seed.id && w.status !== 'deleted' && !deletedIds.has(w.id))
+      .sort((a, b) => b.createdAt - a.createdAt);
+    return deletedIds.has(seed.id) ? base : [...base, localSeed || seed];
   }
 
   try {
     await ensureWorksAuth();
     const q = query(collection(db, 'school_works'), where('communityId', '==', community.id));
     const snap = await getDocs(q);
-    const remote = snap.docs
-      .map((d) => ({ id: d.id, ...(d.data() as Omit<SchoolWork, 'id'>) }))
-      .filter((w) => w.status === 'approved' || isProfessor || (currentUid && w.authorUid === currentUid));
+    const allRemote = snap.docs.map((d) => ({
+      id: d.id,
+      ...(d.data() as Omit<SchoolWork, 'id'>),
+    }));
+
+    for (const item of allRemote) {
+      if (item.status === 'deleted') {
+        deletedIds.add(item.id);
+        markWorkIdDeleted(item.id);
+      }
+    }
+
+    const remoteSeed = allRemote.find((w) => w.id === seed.id && w.status !== 'deleted');
+    const remote = allRemote.filter(
+      (w) =>
+        w.id !== seed.id &&
+        w.status !== 'deleted' &&
+        !deletedIds.has(w.id) &&
+        (w.status === 'approved' || isProfessor || (currentUid && w.authorUid === currentUid))
+    );
 
     const unsynced = localMatches.filter(
       (l) =>
         l.id.startsWith('local-') &&
+        !deletedIds.has(l.id) &&
+        l.status !== 'deleted' &&
         !remote.some((r) => r.createdAt === l.createdAt && r.title === l.title)
     );
     if (unsynced.length > 0) {
@@ -132,12 +179,20 @@ export async function fetchCommunityWorks(
     }
 
     const remainingLocal = localMatches.filter(
-      (l) => !remote.some((r) => r.id === l.id || (r.createdAt === l.createdAt && r.title === l.title))
+      (l) =>
+        l.id !== seed.id &&
+        l.status !== 'deleted' &&
+        !deletedIds.has(l.id) &&
+        !remote.some((r) => r.id === l.id || (r.createdAt === l.createdAt && r.title === l.title))
     );
     const mergedUploads = [...remote, ...remainingLocal].sort((a, b) => b.createdAt - a.createdAt);
-    return [...mergedUploads, seed];
+    const effectiveSeed = deletedIds.has(seed.id) ? null : remoteSeed || localSeed || seed;
+    return effectiveSeed ? [...mergedUploads, effectiveSeed] : mergedUploads;
   } catch {
-    return [...localMatches.sort((a, b) => b.createdAt - a.createdAt), seed];
+    const base = localMatches
+      .filter((w) => w.id !== seed.id && w.status !== 'deleted' && !deletedIds.has(w.id))
+      .sort((a, b) => b.createdAt - a.createdAt);
+    return deletedIds.has(seed.id) ? base : [...base, localSeed || seed];
   }
 }
 
@@ -146,7 +201,6 @@ const ALLOWED_VIDEO_MIMES = new Set(['video/mp4', 'video/webm', 'video/quicktime
 
 async function uploadVideoDirect(
   file: File,
-  authorUid: string,
   communityId: string,
   onProgress?: (pct: number) => void
 ): Promise<string> {
@@ -157,40 +211,7 @@ async function uploadVideoDirect(
     throw new Error('O vídeo deve ter no máximo 50 MB para o evento (ou use um link do YouTube).');
   }
 
-  const storage = getStorageClient();
-  if (!storage) {
-    onProgress?.(100);
-    return URL.createObjectURL(file);
-  }
-
-  const ext = file.name.split('.').pop()?.toLowerCase() || 'mp4';
-  const safePath = `school_works/${authorUid}/${Date.now()}_${communityId}.${ext}`;
-  const storageRef = ref(storage, safePath);
-
-  return new Promise((resolve) => {
-    const task = uploadBytesResumable(storageRef, file, { contentType: file.type });
-    task.on(
-      'state_changed',
-      (snap) => {
-        if (snap.totalBytes > 0) {
-          onProgress?.(Math.round((snap.bytesTransferred / snap.totalBytes) * 100));
-        }
-      },
-      () => {
-        // Fallback para preview local caso Storage não esteja provisionado no evento
-        onProgress?.(100);
-        resolve(URL.createObjectURL(file));
-      },
-      async () => {
-        try {
-          const url = await getDownloadURL(task.snapshot.ref);
-          resolve(url);
-        } catch {
-          resolve(URL.createObjectURL(file));
-        }
-      }
-    );
-  });
+  return uploadVideoToFirestoreChunks(file, communityId, onProgress);
 }
 
 export async function submitSchoolWork(params: {
@@ -216,7 +237,6 @@ export async function submitSchoolWork(params: {
   if (params.workType === 'video' && params.videoFile) {
     mediaUrl = await uploadVideoDirect(
       params.videoFile,
-      params.authorUid,
       params.communityId,
       params.onUploadProgress
     );
@@ -293,4 +313,71 @@ export async function approveSchoolWork(workId: string): Promise<void> {
     w.id === workId ? { ...w, status: 'approved' as const } : w
   );
   saveLocalWorks(updatedLocal);
+}
+
+export async function updateSchoolWork(
+  workId: string,
+  updates: Partial<Pick<SchoolWork, 'title' | 'classGroup' | 'workType' | 'mediaUrl' | 'description'>>,
+  baseWork?: SchoolWork
+): Promise<SchoolWork> {
+  await ensureWorksAuth();
+  const existingLocal = loadLocalWorks().find((w) => w.id === workId);
+  const current = baseWork || existingLocal;
+  if (!current) {
+    throw new Error('Publicação não encontrada para edição.');
+  }
+
+  const updated: SchoolWork = {
+    ...current,
+    title: updates.title?.trim() || current.title,
+    classGroup: updates.classGroup?.trim() || current.classGroup,
+    workType: updates.workType || current.workType,
+    mediaUrl: updates.mediaUrl !== undefined ? updates.mediaUrl.trim() : current.mediaUrl,
+    description: updates.description?.trim() || current.description,
+    status: 'approved',
+  };
+
+  const db = getFirestoreClient();
+  if (db && !workId.startsWith('local-')) {
+    await setDoc(doc(db, 'school_works', workId), updated, { merge: true }).catch(() => undefined);
+  }
+
+  const nextLocal = [updated, ...loadLocalWorks().filter((w) => w.id !== workId)];
+  saveLocalWorks(nextLocal);
+  return updated;
+}
+
+export async function deleteSchoolWork(work: SchoolWork): Promise<void> {
+  await ensureWorksAuth();
+  markWorkIdDeleted(work.id);
+  saveLocalWorks(loadLocalWorks().filter((w) => w.id !== work.id));
+
+  if (work.mediaUrl?.startsWith('firestore-video://')) {
+    await deleteFirestoreVideoChunks(work.mediaUrl).catch(() => undefined);
+  }
+
+  const db = getFirestoreClient();
+  if (!db) return;
+
+  if (work.id.startsWith('seed-')) {
+    await setDoc(
+      doc(db, 'school_works', work.id),
+      {
+        communityId: work.communityId,
+        schoolName: work.schoolName,
+        classGroup: work.classGroup,
+        title: work.title,
+        workType: work.workType,
+        mediaUrl: '',
+        description: work.description,
+        authorUid: work.authorUid,
+        authorLabel: work.authorLabel,
+        status: 'deleted',
+        createdAt: work.createdAt,
+      },
+      { merge: true }
+    ).catch(() => undefined);
+  } else if (!work.id.startsWith('local-')) {
+    await deleteDoc(doc(db, 'school_works', work.id)).catch(() => undefined);
+  }
 }

@@ -1,16 +1,21 @@
 import React, { useState } from 'react';
 import {
+  Check,
   CheckCircle2,
   Clock,
   ExternalLink,
   Image as ImageIcon,
   Maximize2,
+  Pencil,
   Presentation,
   School,
+  Trash2,
   Video,
   X,
 } from 'lucide-react';
 import type { SchoolWork } from '../../../shared/types/domain';
+import { SCHOOL_CLASS_OPTIONS } from '../../auth/services/accessControlService';
+import { ResolvedVideoPlayer } from '../../../shared/components/ResolvedVideoPlayer';
 import {
   isDirectVideoFileUrl,
   toEmbedVideoUrl,
@@ -21,6 +26,11 @@ interface SchoolWorksGalleryProps {
   works: SchoolWork[];
   isProfessor: boolean;
   onApprove: (workId: string) => void;
+  onUpdate?: (
+    work: SchoolWork,
+    updates: Partial<Pick<SchoolWork, 'title' | 'classGroup' | 'workType' | 'mediaUrl' | 'description'>>
+  ) => Promise<unknown>;
+  onDelete?: (work: SchoolWork) => Promise<void>;
 }
 
 function getTypeLabel(type: SchoolWork['workType']): string {
@@ -51,9 +61,56 @@ export const SchoolWorksGallery: React.FC<SchoolWorksGalleryProps> = ({
   works,
   isProfessor,
   onApprove,
+  onUpdate,
+  onDelete,
 }) => {
   const [filter, setFilter] = useState<'all' | 'photos' | 'videos'>('all');
   const [zoomImage, setZoomImage] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editClassGroup, setEditClassGroup] = useState('');
+  const [editWorkType, setEditWorkType] = useState<SchoolWork['workType']>('video');
+  const [editMediaUrl, setEditMediaUrl] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const startEdit = (work: SchoolWork) => {
+    setEditingId(work.id);
+    setEditTitle(work.title);
+    setEditClassGroup(work.classGroup);
+    setEditWorkType(work.workType);
+    setEditMediaUrl(work.mediaUrl);
+    setEditDescription(work.description);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent, work: SchoolWork) => {
+    e.preventDefault();
+    if (!onUpdate) return;
+    setSavingEdit(true);
+    try {
+      await onUpdate(work, {
+        title: editTitle,
+        classGroup: editClassGroup,
+        workType: editWorkType,
+        mediaUrl: editMediaUrl,
+        description: editDescription,
+      });
+      setEditingId(null);
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const handleDelete = async (work: SchoolWork) => {
+    if (!onDelete) return;
+    setDeletingId(work.id);
+    try {
+      await onDelete(work);
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const filtered = works.filter((w) => {
     if (filter === 'videos') return w.workType === 'video';
@@ -117,20 +174,103 @@ export const SchoolWorksGallery: React.FC<SchoolWorksGalleryProps> = ({
                     <h4 className="text-xs font-bold text-slate-900 mt-0.5">{work.title}</h4>
                   </div>
 
-                  {work.status === 'pending' && (
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 flex items-center gap-1 shrink-0">
-                      <Clock size={10} /> Aguardando
-                    </span>
-                  )}
+                  <div className="flex items-center gap-1 shrink-0">
+                    {work.status === 'pending' && (
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 flex items-center gap-1">
+                        <Clock size={10} /> Aguardando
+                      </span>
+                    )}
+                    {isProfessor && onUpdate && (
+                      <button
+                        type="button"
+                        onClick={() => (editingId === work.id ? setEditingId(null) : startEdit(work))}
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-emerald-800 hover:bg-emerald-50"
+                        title="Editar publicação (inclusive padrão)"
+                      >
+                        <Pencil size={13} />
+                      </button>
+                    )}
+                    {isProfessor && onDelete && (
+                      <button
+                        type="button"
+                        disabled={deletingId === work.id}
+                        onClick={() => void handleDelete(work)}
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-rose-700 hover:bg-rose-50 disabled:opacity-40"
+                        title="Excluir publicação (inclusive padrão)"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
-                {directVideo ? (
+                {editingId === work.id ? (
+                  <form onSubmit={(e) => void handleSaveEdit(e, work)} className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 space-y-2">
+                    <input
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      placeholder="Título da publicação"
+                      required
+                      className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg bg-white font-semibold"
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <select
+                        value={editClassGroup}
+                        onChange={(e) => setEditClassGroup(e.target.value)}
+                        className="px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg bg-white font-semibold"
+                      >
+                        {!SCHOOL_CLASS_OPTIONS.includes(editClassGroup) && editClassGroup && (
+                          <option value={editClassGroup}>{editClassGroup}</option>
+                        )}
+                        {SCHOOL_CLASS_OPTIONS.map((t) => (
+                          <option key={t} value={t}>{t}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={editWorkType}
+                        onChange={(e) => setEditWorkType(e.target.value as SchoolWork['workType'])}
+                        className="px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg bg-white font-semibold"
+                      >
+                        <option value="video">Vídeo</option>
+                        <option value="foto_campo">Foto de Campo</option>
+                        <option value="slide_powerpoint">Slide / Canva</option>
+                        <option value="infografico">Infográfico</option>
+                      </select>
+                    </div>
+                    <input
+                      value={editMediaUrl}
+                      onChange={(e) => setEditMediaUrl(e.target.value)}
+                      placeholder="Link do YouTube, Canva, Drive ou URI da mídia"
+                      className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg bg-white"
+                    />
+                    <textarea
+                      value={editDescription}
+                      onChange={(e) => setEditDescription(e.target.value)}
+                      rows={2}
+                      required
+                      className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg bg-white"
+                    />
+                    <div className="flex justify-end gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setEditingId(null)}
+                        className="px-2.5 py-1 rounded-lg border border-slate-300 text-[11px] font-bold text-slate-600 bg-white"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={savingEdit}
+                        className="px-3 py-1 rounded-lg bg-emerald-800 hover:bg-emerald-700 text-white text-[11px] font-bold flex items-center gap-1"
+                      >
+                        <Check size={12} /> {savingEdit ? 'Salvando...' : 'Salvar'}
+                      </button>
+                    </div>
+                  </form>
+                ) : directVideo ? (
                   <div className="rounded-lg overflow-hidden aspect-video bg-slate-950 border border-slate-200">
-                    <video
+                    <ResolvedVideoPlayer
                       src={work.mediaUrl}
-                      controls
-                      playsInline
-                      preload="metadata"
                       className="w-full h-full object-contain"
                     />
                   </div>

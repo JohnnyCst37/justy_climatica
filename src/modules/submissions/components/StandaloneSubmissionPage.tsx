@@ -1,9 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  ArrowLeft, Check, CheckCircle2, Clock, KeyRound, LogOut, MailCheck,
+  Activity, ArrowLeft, Check, CheckCircle2, Clock, KeyRound, LogOut, MailCheck,
   MapPinPlus, School, Share2, Shield, ShieldAlert, UserPlus, Users,
 } from 'lucide-react';
 import type { AuthorizedEmailRole, CommunityNode } from '../../../shared/types/domain';
+import {
+  endPresenceSession,
+  heartbeatPresenceSession,
+  mapAuthRoleToVisitorCategory,
+  startPresenceSession,
+} from '../../presence/services/presenceService';
 import { useCommunitiesList } from '../../../shared/hooks/useCommunitiesList';
 import { useAuthSession } from '../../auth/hooks/useAuthSession';
 import {
@@ -60,7 +66,30 @@ export const StandaloneSubmissionPage: React.FC = () => {
     [communities, selectedId]
   );
 
-  const { works, submitWork, approveWork } = useSchoolWorks(community, hasAccess ? user : null);
+  useEffect(() => {
+    if (!hasAccess || !user) return;
+    let sid = '';
+    void startPresenceSession({
+      name: user.nickname,
+      category: mapAuthRoleToVisitorCategory(user.role),
+      classGroup: user.classCode,
+      area: 'portal_envio',
+    }).then((id) => {
+      sid = id;
+    });
+    const timer = window.setInterval(() => {
+      if (sid) void heartbeatPresenceSession(sid);
+    }, 20000);
+    return () => {
+      window.clearInterval(timer);
+      if (sid) void endPresenceSession(sid);
+    };
+  }, [hasAccess, user?.uid, user?.nickname, user?.role, user?.classCode]);
+
+  const { works, submitWork, approveWork, updateWork, deleteWork } = useSchoolWorks(
+    community,
+    hasAccess ? user : null
+  );
 
   const handleAuthorizedLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,6 +150,15 @@ export const StandaloneSubmissionPage: React.FC = () => {
         <div className="flex items-center gap-2 flex-wrap">
           {hasAccess && isStaff && (
             <>
+              <a
+                href="/acessos"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-900 text-xs font-extrabold flex items-center gap-1.5"
+              >
+                <Activity size={14} className="text-rose-600" />
+                <span>Acessos ao Vivo</span>
+              </a>
               <button
                 type="button"
                 onClick={() => void handleCopyTeachersInvite()}
@@ -333,7 +371,16 @@ export const StandaloneSubmissionPage: React.FC = () => {
             </section>
             <section className="lg:col-span-7 bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-2xs space-y-3">
               <span className="inline-block px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-extrabold uppercase tracking-wider">Passo 3 · Galeria do Território</span>
-              {community && <SchoolWorksGallery communityTitle={community.titulo} works={works} isProfessor={isStaff} onApprove={approveWork} />}
+              {community && (
+                <SchoolWorksGallery
+                  communityTitle={community.titulo}
+                  works={works}
+                  isProfessor={isStaff}
+                  onApprove={approveWork}
+                  onUpdate={updateWork}
+                  onDelete={deleteWork}
+                />
+              )}
             </section>
           </div>
         </main>

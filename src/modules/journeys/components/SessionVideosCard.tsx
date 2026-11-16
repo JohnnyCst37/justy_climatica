@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Award, CheckCircle2, Film, Video } from 'lucide-react';
 import type { CommunityNode, SchoolWork } from '../../../shared/types/domain';
+import { ResolvedVideoPlayer } from '../../../shared/components/ResolvedVideoPlayer';
 import {
   isDirectVideoFileUrl,
   toEmbedVideoUrl,
@@ -33,8 +34,8 @@ export const SessionVideosCard: React.FC<SessionVideosCardProps> = ({
 }) => {
   const [selectedIdx, setSelectedIdx] = useState(0);
 
-  const submittedVideos: PlayableVideoItem[] = works
-    .filter((w) => w.workType === 'video' && Boolean(w.mediaUrl) && !w.id.startsWith('seed-'))
+  const videoList: PlayableVideoItem[] = works
+    .filter((w) => w.workType === 'video' && Boolean(w.mediaUrl))
     .map((w) => ({
       id: w.id,
       title: w.title,
@@ -42,20 +43,6 @@ export const SessionVideosCard: React.FC<SessionVideosCardProps> = ({
       description: w.description,
       mediaUrl: w.mediaUrl,
     }));
-
-  const baseVideo: PlayableVideoItem[] = activeCommunity.videoEquipe.url
-    ? [
-        {
-          id: `seed-${activeCommunity.id}`,
-          title: activeCommunity.videoEquipe.titulo || `Vídeo · ${activeCommunity.titulo}`,
-          classGroup: activeCommunity.serie,
-          description: activeCommunity.videoEquipe.descricao,
-          mediaUrl: activeCommunity.videoEquipe.url,
-        },
-      ]
-    : [];
-
-  const videoList = [...submittedVideos, ...baseVideo];
 
   useEffect(() => {
     setSelectedIdx(0);
@@ -136,12 +123,9 @@ export const SessionVideosCard: React.FC<SessionVideosCardProps> = ({
             <div className="space-y-2">
               <div className="aspect-video rounded-2xl overflow-hidden bg-slate-950 border border-slate-200">
                 {isDirectFile ? (
-                  <video
+                  <ResolvedVideoPlayer
                     key={currentUrl}
                     src={currentUrl}
-                    controls
-                    playsInline
-                    preload="metadata"
                     className="w-full h-full object-contain"
                   />
                 ) : (

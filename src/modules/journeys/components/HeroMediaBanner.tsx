@@ -18,6 +18,7 @@ import {
   getCommunityMediaSlides,
   type CommunityMediaSlide,
 } from '../../../shared/data/communityMediaCatalog';
+import { ResolvedVideoPlayer } from '../../../shared/components/ResolvedVideoPlayer';
 import {
   isDirectVideoFileUrl,
   toEmbedVideoUrl,
@@ -41,14 +42,14 @@ export const HeroMediaBanner: React.FC<HeroMediaBannerProps> = ({
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
 
-  const baseSlides = getCommunityMediaSlides(
+  const allBaseSlides = getCommunityMediaSlides(
     community.id,
     community.infografico.url,
     community.videoEquipe.url
   );
 
   const studentSlides: CommunityMediaSlide[] = works
-    .filter((w) => !w.id.startsWith('seed-') && Boolean(w.mediaUrl))
+    .filter((w) => Boolean(w.mediaUrl))
     .map((w) => ({
       id: `work-${w.id}`,
       type: w.workType === 'video' ? 'video' : w.workType === 'infografico' ? 'infographic' : 'photo',
@@ -57,6 +58,10 @@ export const HeroMediaBanner: React.FC<HeroMediaBannerProps> = ({
       url: w.mediaUrl,
       caption: w.description,
     }));
+
+  const baseSlides = allBaseSlides.filter(
+    (b) => b.type === 'photo' && !studentSlides.some((s) => s.url === b.url)
+  );
 
   useEffect(() => {
     setCurrentSlideIndex(0);
@@ -97,12 +102,9 @@ export const HeroMediaBanner: React.FC<HeroMediaBannerProps> = ({
       {/* Janela de Mídia (16:10 / Altura Nobre) */}
       <div className="relative w-full aspect-[16/10] sm:aspect-[16/9] max-h-[360px] bg-slate-950 flex items-center justify-center overflow-hidden">
         {isDirectVideo ? (
-          <video
+          <ResolvedVideoPlayer
             key={activeUrl}
             src={activeUrl}
-            controls
-            playsInline
-            preload="metadata"
             className="w-full h-full object-contain bg-black"
           />
         ) : embedVideoUrl ? (
