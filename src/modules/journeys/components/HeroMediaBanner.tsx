@@ -97,6 +97,8 @@ export const HeroMediaBanner: React.FC<HeroMediaBannerProps> = ({
   const isExternalWorkLink =
     Boolean(activeUrl) && /^https?:\/\//i.test(activeUrl) && !isDirectVideo && !embedVideoUrl && !isImage;
 
+  const isVideoOrEmbed = isDirectVideo || Boolean(embedVideoUrl);
+
   return (
     <div className="relative w-full rounded-2xl overflow-hidden bg-slate-950 border border-slate-200/80 shadow-md transition-all">
       {/* Janela de Mídia (16:10 / Altura Nobre) */}
@@ -147,86 +149,121 @@ export const HeroMediaBanner: React.FC<HeroMediaBannerProps> = ({
           </div>
         )}
 
-        {/* Gradiente Escuro de Vidro Editorial na base da mídia */}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent pointer-events-none" />
-
-        {/* Selo Territorial e Tipo de Mídia no topo */}
-        <div className="absolute top-3 inset-x-3 flex items-center justify-between gap-2 z-10 pointer-events-none">
-          <span className="px-2.5 py-1 rounded-full bg-slate-950/70 backdrop-blur-md border border-white/15 text-[10.5px] font-bold text-white tracking-wide uppercase">
-            {community.bioma} · {community.municipio}
-          </span>
-
-          <div className="flex items-center gap-1.5 pointer-events-auto">
-            {activeSlide.type === 'photo' && (
-              <button
-                onClick={() => setFullscreenImage(activeSlide.url)}
-                className="w-7 h-7 rounded-lg bg-slate-900/75 hover:bg-slate-900 backdrop-blur-md border border-white/20 text-white flex items-center justify-center transition-colors"
-                title="Ampliar foto"
-              >
-                <Maximize2 size={13} />
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Setas de navegação do carrossel */}
-        {slides.length > 1 && (
+        {!isVideoOrEmbed && (
           <>
-            <button
-              onClick={prevSlide}
-              className="absolute left-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-slate-900/60 hover:bg-slate-900/90 text-white backdrop-blur-md border border-white/20 flex items-center justify-center transition-all z-10"
-              title="Slide anterior"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <button
-              onClick={nextSlide}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-slate-900/60 hover:bg-slate-900/90 text-white backdrop-blur-md border border-white/20 flex items-center justify-center transition-all z-10"
-              title="Próximo slide"
-            >
-              <ChevronRight size={16} />
-            </button>
+            {/* Gradiente Escuro de Vidro Editorial na base da foto/infográfico */}
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent pointer-events-none" />
+
+            {/* Selo Territorial e Botão Ampliar no topo */}
+            <div className="absolute top-3 inset-x-3 flex items-center justify-between gap-2 z-10 pointer-events-none">
+              <span className="px-2.5 py-1 rounded-full bg-slate-950/70 backdrop-blur-md border border-white/15 text-[10.5px] font-bold text-white tracking-wide uppercase">
+                {community.bioma} · {community.municipio}
+              </span>
+
+              <div className="flex items-center gap-1.5 pointer-events-auto">
+                {activeSlide.type === 'photo' && (
+                  <button
+                    onClick={() => setFullscreenImage(activeSlide.url)}
+                    className="w-7 h-7 rounded-lg bg-slate-900/75 hover:bg-slate-900 backdrop-blur-md border border-white/20 text-white flex items-center justify-center transition-colors"
+                    title="Ampliar foto"
+                  >
+                    <Maximize2 size={13} />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Setas de navegação do carrossel (apenas sobre imagens) */}
+            {slides.length > 1 && (
+              <>
+                <button
+                  onClick={prevSlide}
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-slate-900/60 hover:bg-slate-900/90 text-white backdrop-blur-md border border-white/20 flex items-center justify-center transition-all z-10"
+                  title="Slide anterior"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <button
+                  onClick={nextSlide}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-slate-900/60 hover:bg-slate-900/90 text-white backdrop-blur-md border border-white/20 flex items-center justify-center transition-all z-10"
+                  title="Próximo slide"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </>
+            )}
+
+            {/* Legenda Editorial na base da imagem */}
+            <div className="absolute bottom-3 inset-x-3 z-10 text-white space-y-1 pointer-events-none">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-semibold text-emerald-300 tracking-wide uppercase flex items-center gap-1">
+                  {activeSlide.type === 'photo' ? <ImageIcon size={12} /> : <Sparkles size={12} />}
+                  {activeSlide.subtitle}
+                </span>
+
+                {slides.length > 1 && (
+                  <div className="flex items-center gap-1">
+                    {slides.map((s, idx) => (
+                      <button
+                        key={s.id}
+                        onClick={() => setCurrentSlideIndex(idx)}
+                        className={`h-1.5 rounded-full transition-all pointer-events-auto ${
+                          currentSlideIndex === idx ? 'w-5 bg-white' : 'w-1.5 bg-white/40'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <h3 className="text-sm sm:text-base font-extrabold text-white leading-snug drop-shadow-sm line-clamp-1">
+                {activeSlide.title}
+              </h3>
+              <p className="text-[11.5px] text-slate-200/90 leading-tight line-clamp-2">
+                {activeSlide.caption}
+              </p>
+            </div>
           </>
         )}
+      </div>
 
-        {/* Legenda Editorial na base da imagem */}
-        <div className="absolute bottom-3 inset-x-3 z-10 text-white space-y-1 pointer-events-none">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-semibold text-emerald-300 tracking-wide uppercase flex items-center gap-1">
-              {activeSlide.type === 'photo' ? (
-                <ImageIcon size={12} />
-              ) : activeSlide.type === 'video' ? (
-                <Video size={12} />
-              ) : (
-                <Sparkles size={12} />
-              )}
-              {activeSlide.subtitle}
+      {/* Faixa Limpa Abaixo do Vídeo (sem obstruir controles de Play/Pause/Volume) */}
+      {isVideoOrEmbed && activeSlide && (
+        <div className="bg-slate-900 text-white px-3.5 py-2.5 border-t border-slate-800 flex items-center justify-between gap-3">
+          <div className="min-w-0 space-y-0.5">
+            <span className="text-[11px] font-bold text-emerald-300 uppercase tracking-wide flex items-center gap-1.5 truncate">
+              <Video size={12} />
+              <span>{activeSlide.subtitle} · {community.bioma}</span>
             </span>
-
-            {/* Pílulas indicadoras de slide */}
-            {slides.length > 1 && (
-              <div className="flex items-center gap-1">
-                {slides.map((s, idx) => (
-                  <button
-                    key={s.id}
-                    onClick={() => setCurrentSlideIndex(idx)}
-                    className={`h-1.5 rounded-full transition-all pointer-events-auto ${
-                      currentSlideIndex === idx ? 'w-5 bg-white' : 'w-1.5 bg-white/40'
-                    }`}
-                  />
-                ))}
-              </div>
+            <h3 className="text-xs sm:text-sm font-extrabold text-white truncate">
+              {activeSlide.title}
+            </h3>
+            {activeSlide.caption && (
+              <p className="text-[11px] text-slate-300 line-clamp-1">{activeSlide.caption}</p>
             )}
           </div>
-
-          <h3 className="text-sm sm:text-base font-extrabold text-white leading-snug drop-shadow-sm line-clamp-1">
-            {activeSlide.title}
-          </h3>
-          <p className="text-[11.5px] text-slate-200/90 leading-tight line-clamp-2">
-            {activeSlide.caption}
-          </p>
+          {slides.length > 1 && (
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={prevSlide}
+                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white"
+                title="Mídia anterior"
+              >
+                <ChevronLeft size={14} />
+              </button>
+              <button
+                type="button"
+                onClick={nextSlide}
+                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white"
+                title="Próxima mídia"
+              >
+                <ChevronRight size={14} />
+              </button>
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
       {/* Faixa de Seleção Rápida (Vídeos, Slides & Imagens dos Alunos + Sessão) */}
       {slides.length > 0 && (

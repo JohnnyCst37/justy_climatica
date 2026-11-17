@@ -6,6 +6,10 @@ import {
   VISITOR_CATEGORY_LABELS,
   defaultGroupForCategory,
 } from '../../presence/services/presenceService';
+import {
+  requiresRolePasscode,
+  validateRolePasscode,
+} from '../../auth/services/rolePasscodesService';
 import { lyriaEngine } from '../../audio/services/lyriaSoundscapeEngine';
 
 interface EventCoverScreenProps {
@@ -20,13 +24,12 @@ interface EventCoverScreenProps {
   isSpeakingWelcome: boolean;
 }
 
-const CATEGORY_ORDER: VisitorCategory[] = [
-  'estudante',
-  'professor',
-  'coordenador',
-  'diretor',
-  'dre',
-  'outro',
+const OTHER_ROLE_OPTIONS: Array<{ value: VisitorCategory; label: string }> = [
+  { value: 'professor', label: 'Professor(a)' },
+  { value: 'coordenador', label: 'Coordenador(a)' },
+  { value: 'diretor', label: 'Diretor(a)' },
+  { value: 'dre', label: 'Representante da DRE' },
+  { value: 'outro', label: 'Outro / Convidado / Família' },
 ];
 
 const AGE_GROUPS: Array<{ key: AgeGroupKey; label: string; sampleAge: number; desc: string }> = [
@@ -47,6 +50,9 @@ export const EventCoverScreen: React.FC<EventCoverScreenProps> = ({
   const [nickname, setNickname] = useState('');
   const [category, setCategory] = useState<VisitorCategory>('estudante');
   const [classGroup, setClassGroup] = useState<string>('9º Ano A');
+  const [disciplineOrSector, setDisciplineOrSector] = useState<string>('');
+  const [passcode, setPasscode] = useState<string>('');
+  const [passcodeError, setPasscodeError] = useState<string | null>(null);
   const [ageGroup, setAgeGroup] = useState<AgeGroupKey>('13-15');
   const [exactAge, setExactAge] = useState<number>(14);
   const [starting, setStarting] = useState(false);
@@ -54,6 +60,15 @@ export const EventCoverScreen: React.FC<EventCoverScreenProps> = ({
   const handleSelectCategory = (nextCat: VisitorCategory) => {
     setCategory(nextCat);
     setClassGroup(defaultGroupForCategory(nextCat));
+    setPasscode('');
+    setPasscodeError(null);
+    if (nextCat !== 'estudante' && ageGroup === '13-15' && exactAge === 14) {
+      setAgeGroup('19+');
+      setExactAge(28);
+    } else if (nextCat === 'estudante' && ageGroup === '19+' && exactAge === 28) {
+      setAgeGroup('13-15');
+      setExactAge(14);
+    }
   };
 
   const handleSelectAgeGroup = (group: { key: AgeGroupKey; sampleAge: number }) => {
@@ -63,6 +78,14 @@ export const EventCoverScreen: React.FC<EventCoverScreenProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (requiresRolePasscode(category) && !validateRolePasscode(category, passcode)) {
+      setPasscodeError(
+        `Senha inválida para ${VISITOR_CATEGORY_LABELS[category]}. Solicite a senha ao Super Admin ou selecione "Estudante".`
+      );
+      return;
+    }
+
+    setPasscodeError(null);
     setStarting(true);
     try {
       // Prepara áudio Lyria e solicita Tela Cheia diretamente no gesto do clique
@@ -74,12 +97,19 @@ export const EventCoverScreen: React.FC<EventCoverScreenProps> = ({
         await document.documentElement.requestFullscreen().catch(() => undefined);
       }
 
+      const resolvedGroup =
+        category === 'estudante'
+          ? classGroup
+          : requiresRolePasscode(category)
+          ? disciplineOrSector.trim() || defaultGroupForCategory(category)
+          : defaultGroupForCategory(category);
+
       await onStartVisitor({
         nickname: nickname.trim() || 'Visitante da Mostra',
         age: exactAge,
         ageGroup,
         category,
-        classGroup,
+        classGroup: resolvedGroup,
       });
     } finally {
       setStarting(false);
@@ -155,23 +185,34 @@ export const EventCoverScreen: React.FC<EventCoverScreenProps> = ({
 
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-700 block">Você é:</label>
-            <div className="flex flex-wrap gap-1.5">
-              {CATEGORY_ORDER.map((cat) => (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => handleSelectCategory(cat)}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition ${
-                    category === cat
-                      ? 'bg-emerald-800 border-emerald-800 text-white'
-                      : 'bg-white border-slate-300 text-slate-700 hover:border-emerald-500'
-                  }`}
-                >
-                  {VISITOR_CATEGORY_LABELS[cat]}
-                </button>
-              ))}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => handleSelectCategory('estudante')}
+                className={`py-2 px-3 rounded-xl text-xs font-extrabold border transition ${
+                  category === 'estudante'
+                    ? 'bg-emerald-800 border-emerald-800 text-white shadow-xs'
+                    : 'bg-white border-slate-300 text-slate-700 hover:border-emerald-500'
+                }`}
+              >
+                Estudante
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (category === 'estudante') handleSelectCategory('professor');
+                }}
+                className={`py-2 px-3 rounded-xl text-xs font-extrabold border transition ${
+                  category !== 'estudante'
+                    ? 'bg-emerald-800 border-emerald-800 text-white shadow-xs'
+                    : 'bg-white border-slate-300 text-slate-700 hover:border-emerald-500'
+                }`}
+              >
+                Outro Perfil ▾
+              </button>
             </div>
-            {category === 'estudante' && (
+
+            {category === 'estudante' ? (
               <select
                 aria-label="Selecione sua Turma"
                 value={classGroup}
@@ -185,8 +226,54 @@ export const EventCoverScreen: React.FC<EventCoverScreenProps> = ({
                 ))}
                 <option value="Outra Turma / Escola">Outra Turma / Escola</option>
               </select>
+            ) : (
+              <div className="space-y-2 pt-1">
+                <select
+                  aria-label="Selecione seu cargo ou perfil"
+                  value={category}
+                  onChange={(e) => handleSelectCategory(e.target.value as VisitorCategory)}
+                  className="w-full px-3 py-2 rounded-xl border border-emerald-600 bg-emerald-50/40 text-xs font-extrabold text-emerald-950"
+                >
+                  {OTHER_ROLE_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+
+                {requiresRolePasscode(category) && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      value={disciplineOrSector}
+                      onChange={(e) => setDisciplineOrSector(e.target.value)}
+                      placeholder={
+                        category === 'professor'
+                          ? 'Disciplina (ex: Ciências)'
+                          : 'Setor (ex: Coordenação / DRE)'
+                      }
+                      required
+                      className="px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs"
+                    />
+                    <input
+                      type="password"
+                      value={passcode}
+                      onChange={(e) => setPasscode(e.target.value)}
+                      placeholder="Senha do perfil"
+                      required
+                      className="px-3 py-2 rounded-xl border border-amber-400 bg-amber-50/40 text-xs font-mono"
+                    />
+                  </div>
+                )}
+              </div>
             )}
           </div>
+
+          {passcodeError && (
+            <div className="text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">
+              {passcodeError}
+            </div>
+          )}
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">

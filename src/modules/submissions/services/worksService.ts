@@ -122,7 +122,13 @@ export async function fetchCommunityWorks(
 
   if (!db) {
     const base = localMatches
-      .filter((w) => w.id !== seed.id && w.status !== 'deleted' && !deletedIds.has(w.id))
+      .filter(
+        (w) =>
+          w.id !== seed.id &&
+          w.status !== 'deleted' &&
+          !deletedIds.has(w.id) &&
+          !w.mediaUrl.startsWith('blob:')
+      )
       .sort((a, b) => b.createdAt - a.createdAt);
     return deletedIds.has(seed.id) ? base : [...base, localSeed || seed];
   }
@@ -149,6 +155,7 @@ export async function fetchCommunityWorks(
         w.id !== seed.id &&
         w.status !== 'deleted' &&
         !deletedIds.has(w.id) &&
+        !w.mediaUrl.startsWith('blob:') &&
         (w.status === 'approved' || isProfessor || (currentUid && w.authorUid === currentUid))
     );
 
@@ -183,6 +190,7 @@ export async function fetchCommunityWorks(
         l.id !== seed.id &&
         l.status !== 'deleted' &&
         !deletedIds.has(l.id) &&
+        !l.mediaUrl.startsWith('blob:') &&
         !remote.some((r) => r.id === l.id || (r.createdAt === l.createdAt && r.title === l.title))
     );
     const mergedUploads = [...remote, ...remainingLocal].sort((a, b) => b.createdAt - a.createdAt);
@@ -190,7 +198,13 @@ export async function fetchCommunityWorks(
     return effectiveSeed ? [...mergedUploads, effectiveSeed] : mergedUploads;
   } catch {
     const base = localMatches
-      .filter((w) => w.id !== seed.id && w.status !== 'deleted' && !deletedIds.has(w.id))
+      .filter(
+        (w) =>
+          w.id !== seed.id &&
+          w.status !== 'deleted' &&
+          !deletedIds.has(w.id) &&
+          !w.mediaUrl.startsWith('blob:')
+      )
       .sort((a, b) => b.createdAt - a.createdAt);
     return deletedIds.has(seed.id) ? base : [...base, localSeed || seed];
   }

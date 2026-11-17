@@ -21,6 +21,7 @@ import {
   findAuthorizedEmail,
   requestAccessRegistration,
 } from './accessControlService';
+import { resolveStaffRoleByPasscode } from './rolePasscodesService';
 
 const LOCAL_PROFILE_KEY = 'justy_climatica_user_profile_v1';
 
@@ -136,6 +137,48 @@ export async function loginWithAuthorizedEmail(email: string): Promise<UserProfi
   return profile;
 }
 
+export async function loginWithRolePasscode(input: {
+  name: string;
+  disciplineOrClasses: string;
+  passcode: string;
+}): Promise<UserProfile> {
+  const role = resolveStaffRoleByPasscode(input.passcode);
+  if (!role) {
+    throw new Error(
+      'Senha de acesso inválida. Peça o código correto (Professor, Coordenador ou Diretor) ao Super Admin.'
+    );
+  }
+
+  const cleanName = input.name.trim().slice(0, 48) || ROLE_LABELS[role];
+  const slug =
+    cleanName
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '.')
+      .replace(/(^\.|\.$)/g, '') || 'docente';
+
+  const auth = getFirebaseAuthClient();
+  if (auth && !auth.currentUser) {
+    await signInAnonymously(auth).catch(() => undefined);
+  }
+  const uid = auth?.currentUser?.uid || `code_${role}_${slug}`;
+  const profile: UserProfile = {
+    uid,
+    nickname: cleanName,
+    email: `${role}.${slug}@codigo.escola`,
+    classCode:
+      input.disciplineOrClasses.trim() || '9º Ano A, 9º Ano B, 9º Ano C, 9º Ano D',
+    role,
+    isAnonymous: false,
+    pendingApproval: false,
+    sessionToken: buildSessionToken(uid),
+  };
+
+  saveLocalUserProfile(profile);
+  return profile;
+}
+
 export async function registerAndRequestApproval(input: {
   email: string;
   name: string;
@@ -234,6 +277,16 @@ export function subscribeAuthChanges(onProfile: (profile: UserProfile | null) =>
     const local = loadLocalUserProfile();
     if (!fbUser) {
       onProfile(local);
+      return;
+    }
+    if (local && !local.isAnonymous && local.email?.endsWith('@codigo.escola')) {
+      const updatedLocal: UserProfile = {
+        ...local,
+        uid: fbUser.uid,
+        sessionToken: buildSessionToken(fbUser.uid),
+      };
+      saveLocalUserProfile(updatedLocal);
+      onProfile(updatedLocal);
       return;
     }
     const cleanEmail = (fbUser.email || local?.email || '').trim().toLowerCase();

@@ -5,6 +5,7 @@ import {
   loginWithAuthorizedEmail,
   loginWithClassroomCode,
   loginWithGoogleAccount,
+  loginWithRolePasscode,
   logoutSession,
   registerAndRequestApproval,
   saveLocalUserProfile,
@@ -44,6 +45,23 @@ export function useAuthSession() {
       return null;
     }
   }, []);
+
+  const enterWithRolePasscode = useCallback(
+    async (input: { name: string; disciplineOrClasses: string; passcode: string }) => {
+      setAuthError(null);
+      try {
+        const profile = await loginWithRolePasscode(input);
+        setUser(profile);
+        return profile;
+      } catch (err) {
+        setAuthError(
+          err instanceof Error ? err.message : 'Senha de cargo inválida.'
+        );
+        return null;
+      }
+    },
+    []
+  );
 
   const enterWithGoogle = useCallback(async () => {
     setAuthError(null);
@@ -111,6 +129,7 @@ export function useAuthSession() {
     authError,
     enterWithClassroom,
     enterWithAuthorizedEmail,
+    enterWithRolePasscode,
     enterWithGoogle,
     submitAccessRequest,
     refreshApprovalStatus,
