@@ -14,6 +14,7 @@ import {
 import { LiveVoiceSession } from '../services/liveVoiceClient';
 import {
   buildContextualGreeting,
+  playBrowserSpeech,
   stopAllAudio,
 } from '../services/soundNarrator';
 import { lyriaEngine } from '../../audio/services/lyriaSoundscapeEngine';
@@ -105,6 +106,23 @@ export function useGuideAssistant(params: {
     setIsAudioLoading(false);
   }, []);
 
+  const startBrowserFallback = useCallback((text: string, seq: number) => {
+    playBrowserSpeech(
+      text,
+      () => {
+        if (seq !== speechSeqRef.current) return;
+        setVoiceStatus('idle');
+        setIsAudioLoading(false);
+      },
+      () => {
+        if (seq !== speechSeqRef.current) return;
+        setVoiceStatus('idle');
+        setIsAudioLoading(false);
+        setErrorMsg('Aguarde um instante para a narração HD do Guia.');
+      }
+    );
+  }, []);
+
   const speakText = useCallback(
     async (text: string) => {
       const seq = ++speechSeqRef.current;
@@ -134,18 +152,16 @@ export function useGuideAssistant(params: {
         };
         audioRef.current.onerror = () => {
           if (seq !== speechSeqRef.current) return;
-          setVoiceStatus('idle');
-          setIsAudioLoading(false);
+          startBrowserFallback(text, seq);
         };
         await audioRef.current.play();
       } catch {
         if (seq !== speechSeqRef.current) return;
         setIsAudioLoading(false);
-        setVoiceStatus('idle');
-        setErrorMsg('Aguarde um instante para a narração HD do Guia.');
+        startBrowserFallback(text, seq);
       }
     },
-    [params.user, params.community?.id, params.activeJourney, params.stepIndex]
+    [params.user, params.community?.id, params.activeJourney, params.stepIndex, startBrowserFallback]
   );
 
   const toggleStoryAudio = useCallback(

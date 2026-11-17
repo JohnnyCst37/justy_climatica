@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "build:client": "vite build && esbuild server/app.ts --bundle --platform=node --format=cjs --packages=external --outfile=dist-server/app.cjs",
+    "build:client": "vite build && esbuild server/app.ts --bundle --minify --platform=node --target=node20 --format=cjs --external:firebase-admin/* --outfile=dist-server/app.cjs",
     "build": "npm run build:client && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "start": "node dist/server.cjs",
     "preview": "vite preview",

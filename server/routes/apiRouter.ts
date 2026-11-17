@@ -32,7 +32,9 @@ apiRouter.use(rejectClientSuppliedApiKeys);
 apiRouter.get('/health', (_req, res: Response) => {
   res.json({
     status: 'ok',
-    geminiConfigured: Boolean(process.env.GEMINI_API_KEY || process.env.API_KEY),
+    geminiConfigured: Boolean(
+      (process.env.GEMINI_API_KEY || process.env.API_KEY || process.env.GOOGLE_API_KEY || '').trim()
+    ),
     firebaseAdminReady: isAdminReady(),
   });
 });
