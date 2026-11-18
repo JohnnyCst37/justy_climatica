@@ -94,30 +94,31 @@ export const StandaloneSubmissionPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#f8f7f3] text-slate-900">
-      <header className="bg-white border-b border-slate-200 px-4 sm:px-8 py-3 flex items-center justify-between gap-3 sticky top-0 z-20 flex-wrap">
-        <div className="flex items-center gap-3 min-w-0">
-          <a href="/" className="p-2 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 shrink-0" title="Voltar para a Mostra">
+      <header className="bg-white border-b border-slate-200 px-3 sm:px-8 py-2.5 sm:py-3 flex items-center justify-between gap-2.5 sm:gap-3 sticky top-0 z-20 flex-wrap">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+          <a href="/" className="p-2 min-w-[38px] min-h-[38px] flex items-center justify-center rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 shrink-0" title="Voltar para a Mostra">
             <ArrowLeft size={16} />
           </a>
           <div className="min-w-0">
-            <span className="text-[11px] font-bold uppercase tracking-wide text-emerald-800 flex items-center gap-1">
-              <School size={12} /> Área Restrita · Professores, Coordenação & Alunos Líderes
+            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wide text-emerald-800 flex items-center gap-1 truncate">
+              <School size={12} className="shrink-0" /> <span className="truncate">Área Restrita · Professores, Coordenação & Líderes</span>
             </span>
-            <h1 className="text-sm sm:text-base font-extrabold text-slate-900 truncate">
+            <h1 className="text-xs sm:text-base font-extrabold text-slate-900 truncate">
               Envio de Vídeos, Fotos & Territórios · EE CM João Ribeiro Vilela
             </h1>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap w-full sm:w-auto justify-end">
           {hasAccess && user?.role === 'super_admin' && (
             <button
               type="button"
               onClick={() => setPasscodesOpen(true)}
-              className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold flex items-center gap-1.5"
+              className="px-2.5 sm:px-3 py-1.5 min-h-[36px] rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[11px] sm:text-xs font-extrabold flex items-center gap-1.5"
             >
-              <KeyRound size={14} className="text-amber-300" />
-              <span>Senhas (Profs, Coord, Diretor, DRE)</span>
+              <KeyRound size={14} className="text-amber-300 shrink-0" />
+              <span className="sm:hidden">Senhas</span>
+              <span className="hidden sm:inline">Senhas (Profs, Coord, Diretor, DRE)</span>
             </button>
           )}
           {hasAccess && isStaff && (
@@ -126,26 +127,29 @@ export const StandaloneSubmissionPage: React.FC = () => {
                 href="/acessos"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-900 text-xs font-extrabold flex items-center gap-1.5"
+                className="px-2.5 sm:px-3 py-1.5 min-h-[36px] rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-900 text-[11px] sm:text-xs font-extrabold flex items-center gap-1.5"
               >
-                <Activity size={14} className="text-rose-600" />
-                <span>Acessos ao Vivo</span>
+                <Activity size={14} className="text-rose-600 shrink-0" />
+                <span className="sm:hidden">Acessos</span>
+                <span className="hidden sm:inline">Acessos ao Vivo</span>
               </a>
               <button
                 type="button"
                 onClick={() => void handleCopyTeachersInvite()}
-                className="px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 border border-sky-200 text-sky-900 text-xs font-extrabold flex items-center gap-1.5"
+                className="px-2.5 sm:px-3 py-1.5 min-h-[36px] rounded-xl bg-sky-50 hover:bg-sky-100 border border-sky-200 text-sky-900 text-[11px] sm:text-xs font-extrabold flex items-center gap-1.5"
               >
-                {copiedInvite ? <Check size={14} className="text-emerald-700" /> : <Share2 size={14} />}
-                <span>{copiedInvite ? 'Texto copiado para o WhatsApp!' : 'Copiar Link p/ Grupo dos Profs'}</span>
+                {copiedInvite ? <Check size={14} className="text-emerald-700 shrink-0" /> : <Share2 size={14} className="shrink-0" />}
+                <span className="sm:hidden">{copiedInvite ? 'Copiado!' : 'Convidar'}</span>
+                <span className="hidden sm:inline">{copiedInvite ? 'Texto copiado para o WhatsApp!' : 'Copiar Link p/ Grupo dos Profs'}</span>
               </button>
               <button
                 type="button"
                 onClick={() => setEmailManagerOpen(true)}
-                className="px-3 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-950 text-xs font-extrabold flex items-center gap-1.5"
+                className="px-2.5 sm:px-3 py-1.5 min-h-[36px] rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-950 text-[11px] sm:text-xs font-extrabold flex items-center gap-1.5"
               >
-                <Users size={14} />
-                <span>Aprovar & Gerenciar E-mails</span>
+                <Users size={14} className="shrink-0" />
+                <span className="sm:hidden">E-mails</span>
+                <span className="hidden sm:inline">Aprovar & Gerenciar E-mails</span>
               </button>
             </>
           )}
@@ -198,8 +202,8 @@ export const StandaloneSubmissionPage: React.FC = () => {
                 </select>
               </div>
               <div className="md:col-span-4">
-                <button type="button" onClick={() => setCreateModalOpen(true)} className="w-full px-4 py-3 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-white text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 whitespace-nowrap shadow-xs">
-                  <MapPinPlus size={16} /> <span>+ Criar Novo Território / Comunidade</span>
+                <button type="button" onClick={() => setCreateModalOpen(true)} className="w-full px-4 py-3 min-h-[44px] rounded-xl bg-emerald-800 hover:bg-emerald-700 text-white text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 text-center shadow-xs">
+                  <MapPinPlus size={16} className="shrink-0" /> <span>+ Criar Novo Território / Comunidade</span>
                 </button>
               </div>
             </div>

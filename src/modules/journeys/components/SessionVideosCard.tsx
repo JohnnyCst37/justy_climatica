@@ -54,9 +54,9 @@ export const SessionVideosCard: React.FC<SessionVideosCardProps> = ({
   const embedUrl = toEmbedVideoUrl(currentUrl);
 
   return (
-    <div className="rounded-3xl border border-emerald-800/20 bg-white p-5 sm:p-6 shadow-sm space-y-4">
+    <div className="rounded-2xl sm:rounded-3xl border border-emerald-800/20 bg-white p-4 sm:p-6 shadow-sm space-y-4">
       {videoChoice === 'pending' && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-4">
           <div className="space-y-1">
             <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1">
               <Video size={13} /> Passo Seguinte da Jornada
@@ -70,18 +70,18 @@ export const SessionVideosCard: React.FC<SessionVideosCardProps> = ({
               Quer assistir a alguns dos vídeos que selecionamos para você nesta sessão?
             </h3>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto shrink-0">
             <button
               type="button"
               onClick={onAcceptVideo}
-              className="px-4 py-2 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-white text-xs sm:text-sm font-extrabold"
+              className="px-3 sm:px-4 py-2.5 sm:py-2 min-h-[42px] rounded-xl bg-emerald-800 hover:bg-emerald-700 text-white text-xs sm:text-sm font-extrabold text-center"
             >
               Sim, assistir vídeo
             </button>
             <button
               type="button"
               onClick={onOpenQuiz}
-              className="px-4 py-2 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs sm:text-sm font-bold"
+              className="px-3 sm:px-4 py-2.5 sm:py-2 min-h-[42px] rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs sm:text-sm font-bold text-center"
             >
               Não, ir ao Quiz
             </button>

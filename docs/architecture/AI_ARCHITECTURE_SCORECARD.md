@@ -1,7 +1,7 @@
 # 🧠 Scorecard Arquitetural de IA, Coesão & Escalabilidade (justy_climatica)
 
 > **Gerado por:** JF Architecture Sentinel v2.0 (Determinístico · Custo R$ 0,00 de Tokens)  
-> **Data:** 18/11/2026, 10:13:34  
+> **Data:** 18/11/2026, 10:40:57  
 > **Stack Detectada:** Vite (^6.2.0) · React (^19.2.4) · Express (^4.21.2) · Firebase (^13.3.0) · @google/genai (^3.1.0)
 
 ---
@@ -44,9 +44,10 @@
 | `src/shared/data/communitiesPart2.ts` | SERVICE_API | **338** (teto: 420) | 0 (0S/0E) | — |
 | `src/modules/submissions/components/SubmissionAuthCard.tsx` | UI_COMPONENT | **337** (teto: 380) | 9 (8S/1E) | M4 |
 | `src/shared/data/communitiesPart3.ts` | SERVICE_API | **332** (teto: 420) | 0 (0S/0E) | — |
-| `src/modules/journeys/components/GoogleStyleSearchStage.tsx` | UI_COMPONENT | **326** (teto: 380) | 3 (1S/2E) | — |
+| `src/modules/journeys/components/GoogleStyleSearchStage.tsx` | UI_COMPONENT | **331** (teto: 380) | 3 (1S/2E) | — |
 | `src/modules/kiosk/components/EventCoverScreen.tsx` | UI_COMPONENT | **310** (teto: 380) | 2 (2S/0E) | — |
-| `src/App.tsx` | UI_COMPONENT | **293** (teto: 380) | 15 (5S/3E) | M4 |
+| `src/modules/presence/components/LiveAccessDashboardPage.tsx` | UI_COMPONENT | **303** (teto: 380) | 4 (0S/1E) | — |
+| `src/App.tsx` | UI_COMPONENT | **296** (teto: 380) | 15 (5S/3E) | M4 |
 | `src/modules/map/components/MapCanvas.tsx` | UI_COMPONENT | **284** (teto: 380) | 12 (2S/3E) | M4 |
 | `src/modules/auth/services/authService.ts` | SERVICE_API | **283** (teto: 420) | 0 (0S/0E) | M4 |
 | `src/modules/auth/services/accessControlService.ts` | SERVICE_API | **277** (teto: 420) | 0 (0S/0E) | M4 |

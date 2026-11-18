@@ -302,12 +302,12 @@ export const HeroMediaBanner: React.FC<HeroMediaBannerProps> = ({
       )}
 
       {/* Barra de Áudio Fluido do Guia Gemini (Abaixo da Janela Visual) */}
-      <div className="bg-[#f5f2e8] px-3.5 py-2.5 flex items-center justify-between gap-3 border-t border-slate-200/90">
-        <div className="flex items-center gap-2.5 min-w-0">
+      <div className="bg-[#f5f2e8] px-3 sm:px-3.5 py-2.5 flex flex-wrap items-center justify-between gap-2 sm:gap-3 border-t border-slate-200/90">
+        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
           <button
             onClick={onToggleAudio}
             disabled={isAudioLoading}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow-xs ${
+            className={`px-3 py-2 sm:py-1.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow-xs ${
               isPlayingAudio
                 ? 'bg-amber-600 text-white ring-2 ring-amber-300'
                 : 'bg-emerald-800 hover:bg-emerald-700 text-white'

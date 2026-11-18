@@ -79,8 +79,8 @@ export const ClimateQuizModal: React.FC<ClimateQuizModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-[#fdfbf7] rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-2xl border border-slate-200 relative space-y-5">
+    <div className="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-2.5 sm:p-4">
+      <div className="bg-[#fdfbf7] rounded-2xl sm:rounded-3xl max-w-xl w-full p-4 sm:p-7 max-h-[92vh] overflow-y-auto shadow-2xl border border-slate-200 relative space-y-4 sm:space-y-5">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100"

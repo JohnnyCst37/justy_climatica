@@ -206,38 +206,39 @@ export const App: React.FC = () => {
   return (
     <div className={`min-h-screen w-full flex flex-col font-sans transition-colors duration-500 ${biomePalette.pageBg}`}>
       <header
-        className={`sticky top-0 z-30 border-b border-slate-200/80 backdrop-blur-md px-4 sm:px-6 py-2.5 flex items-center justify-between gap-3 ${biomePalette.headerBg}`}
+        className={`sticky top-0 z-30 border-b border-slate-200/80 backdrop-blur-md px-3 sm:px-6 py-2 sm:py-2.5 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 sm:gap-3 ${biomePalette.headerBg}`}
       >
-        <div className="flex items-center gap-2.5 min-w-0">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <BioPatrimonioLogo className="w-7 h-7 shrink-0" />
           <div className="min-w-0">
-            <span className="text-sm font-extrabold tracking-tight text-slate-900 block truncate">
+            <span className="text-xs sm:text-sm font-extrabold tracking-tight text-slate-900 block truncate">
               Jornada da Justiça Climática · EE CM João Ribeiro Vilela
             </span>
-            <span className={`inline-block text-[11px] font-bold px-2 py-0.5 rounded-full mt-0.5 ${biomePalette.badgeBg} ${biomePalette.badgeText}`}>
+            <span className={`inline-block text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-full mt-0.5 ${biomePalette.badgeBg} ${biomePalette.badgeText}`}>
               {biomePalette.label}
             </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 flex-wrap justify-end">
           <button
             type="button"
             onClick={handleToggleLyriaMute}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/80 hover:bg-white border border-slate-200 text-xs font-semibold text-slate-700"
+            aria-label={lyriaMuted ? 'Ativar trilha sonora Lyria' : 'Silenciar trilha sonora Lyria'}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 min-h-[36px] rounded-xl bg-white/80 hover:bg-white border border-slate-200 text-xs font-semibold text-slate-700"
             title={lyriaMuted ? 'Ativar trilha sonora Lyria' : 'Silenciar trilha sonora Lyria'}
           >
-            {lyriaMuted ? <VolumeX size={14} className="text-rose-600" /> : <Volume2 size={14} className="text-emerald-700" />}
+            {lyriaMuted ? <VolumeX size={15} className="text-rose-600" /> : <Volume2 size={15} className="text-emerald-700" />}
             <span className="hidden sm:inline">{lyriaMuted ? 'Som mudo' : 'Trilha Lyria'}</span>
           </button>
 
           <button
             type="button"
             onClick={() => setQuizOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold shadow-xs"
+            className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 min-h-[36px] rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold shadow-xs"
           >
             <Award size={14} />
-            <span>Quiz (5/100)</span>
+            <span>Quiz<span className="hidden sm:inline"> (5/100)</span></span>
           </button>
 
           <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/85 border border-slate-200 text-xs font-bold text-slate-800">
@@ -249,7 +250,8 @@ export const App: React.FC = () => {
           <button
             type="button"
             onClick={handleFinishVisitorCycle}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/80 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-xs font-semibold text-slate-700 hover:text-rose-700"
+            aria-label="Encerrar visita atual e preparar para próximo visitante"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 min-h-[36px] rounded-xl bg-white/80 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-xs font-semibold text-slate-700 hover:text-rose-700"
             title="Encerrar visita atual e preparar para próximo visitante"
           >
             <RotateCcw size={14} />
@@ -259,7 +261,8 @@ export const App: React.FC = () => {
           <button
             type="button"
             onClick={() => setAdminPromptOpen(true)}
-            className="p-2 rounded-xl bg-slate-900/10 hover:bg-slate-900/20 text-slate-700"
+            aria-label="Controle do Professor"
+            className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-xl bg-slate-900/10 hover:bg-slate-900/20 text-slate-700"
             title="Controle do Professor (Quiosque)"
           >
             <Lock size={14} />

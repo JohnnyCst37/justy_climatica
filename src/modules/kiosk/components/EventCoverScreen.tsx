@@ -117,27 +117,27 @@ export const EventCoverScreen: React.FC<EventCoverScreenProps> = ({
   };
 
   return (
-    <div className="min-h-screen w-screen bg-gradient-to-br from-[#071e17] via-[#0d3326] to-[#1a2e1a] text-white flex items-center justify-center p-4 sm:p-8 relative overflow-hidden">
+    <div className="min-h-screen w-full bg-gradient-to-br from-[#071e17] via-[#0d3326] to-[#1a2e1a] text-white flex items-start sm:items-center justify-center px-3.5 py-6 sm:p-8 relative overflow-x-hidden overflow-y-auto">
       {/* Brilhos orgânicos de fundo */}
-      <div className="absolute -top-28 -left-28 w-96 h-96 rounded-full bg-emerald-500/15 blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-32 -right-32 w-[460px] h-[460px] rounded-full bg-amber-500/15 blur-3xl pointer-events-none" />
+      <div className="absolute -top-28 -left-28 w-72 sm:w-96 h-72 sm:h-96 rounded-full bg-emerald-500/15 blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-32 -right-32 w-80 sm:w-[460px] h-80 sm:h-[460px] rounded-full bg-amber-500/15 blur-3xl pointer-events-none" />
 
-      <div className="relative z-10 max-w-4xl w-full grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+      <div className="relative z-10 max-w-4xl w-full grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-center">
         {/* Coluna Esquerda: Capa Cinematográfica do Evento */}
-        <div className="lg:col-span-7 space-y-5">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 backdrop-blur-md text-xs font-bold text-amber-300 tracking-wide uppercase">
-            <Sparkles size={14} />
+        <div className="lg:col-span-7 space-y-3.5 sm:space-y-5">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 backdrop-blur-md text-[11px] sm:text-xs font-bold text-amber-300 tracking-wide uppercase">
+            <Sparkles size={13} className="shrink-0" />
             <span>Mostra Científica & Interativa · Mato Grosso</span>
           </div>
 
-          <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-[1.08] text-white">
+          <h1 className="text-2xl sm:text-5xl font-black tracking-tight leading-[1.1] text-white">
             Jornada da Justiça Climática
-            <span className="block text-emerald-300 text-2xl sm:text-3xl font-extrabold mt-2">
+            <span className="block text-emerald-300 text-lg sm:text-3xl font-extrabold mt-1.5 sm:mt-2">
               na EE CM João Ribeiro Vilela
             </span>
           </h1>
 
-          <p className="text-sm sm:text-base text-slate-200 leading-relaxed max-w-xl">
+          <p className="text-xs sm:text-base text-slate-200 leading-relaxed max-w-xl">
             Uma experiência guiada de <strong>1 a 5 minutos</strong> com paisagens sonoras dos nossos biomas,
             mapas vivos, histórias reais das comunidades e desafio interativo adaptado à sua idade.
           </p>
@@ -148,7 +148,7 @@ export const EventCoverScreen: React.FC<EventCoverScreenProps> = ({
               lyriaEngine.initOnLogin();
               onSpeakWelcome(WELCOME_SPEECH);
             }}
-            className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-xs sm:text-sm font-bold text-white transition-all"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-4 py-2.5 min-h-[44px] rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-xs sm:text-sm font-bold text-white transition-all"
           >
             <Volume2 size={16} className={isSpeakingWelcome ? 'text-amber-300 animate-pulse' : 'text-emerald-300'} />
             <span>
@@ -160,7 +160,7 @@ export const EventCoverScreen: React.FC<EventCoverScreenProps> = ({
         {/* Coluna Direita: Entrada Rápida (Nome + Idade) */}
         <form
           onSubmit={handleSubmit}
-          className="lg:col-span-5 bg-[#fdfbf7] text-slate-900 rounded-3xl p-6 shadow-2xl border border-white/20 space-y-4"
+          className="lg:col-span-5 bg-[#fdfbf7] text-slate-900 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-2xl border border-white/20 space-y-3.5 sm:space-y-4"
         >
           <div className="space-y-1">
             <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
@@ -179,7 +179,7 @@ export const EventCoverScreen: React.FC<EventCoverScreenProps> = ({
               onChange={(e) => setNickname(e.target.value)}
               placeholder="Ex: Ana Clara, Lucas 9ºB..."
               required
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600"
+              className="w-full px-3.5 py-2.5 min-h-[44px] rounded-xl border border-slate-300 bg-white text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600"
             />
           </div>
 

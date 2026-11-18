@@ -131,18 +131,19 @@ export const GoogleStyleSearchStage: React.FC<GoogleStyleSearchStageProps> = ({
   return (
     <div className={`min-h-full transition-colors duration-500 ${palette.pageBg} pb-12`}>
       {/* Topo Estilo Barra de Busca Google + 3 Botões Temáticos */}
-      <div className={`border-b ${palette.cardBorder} ${palette.headerBg} px-4 sm:px-8 py-4 transition-colors duration-500`}>
-        <div className="max-w-6xl mx-auto space-y-3">
-          <div className="flex flex-col md:flex-row md:items-center gap-3">
-            <div className="flex-1 bg-white rounded-full border border-slate-300/90 shadow-xs px-4 py-2.5 flex items-center gap-3">
-              <Search size={17} className="text-slate-400 shrink-0" />
-              <span className="text-xs sm:text-sm font-semibold text-slate-800 truncate flex-1">
+      <div className={`border-b ${palette.cardBorder} ${palette.headerBg} px-3 sm:px-8 py-3 sm:py-4 transition-colors duration-500`}>
+        <div className="max-w-6xl mx-auto space-y-2.5 sm:space-y-3">
+          <div className="flex flex-col md:flex-row md:items-center gap-2 sm:gap-3">
+            <div className="flex-1 bg-white rounded-2xl sm:rounded-full border border-slate-300/90 shadow-xs px-3.5 sm:px-4 py-2 sm:py-2.5 flex items-center gap-2.5 sm:gap-3 min-w-0">
+              <Search size={16} className="text-slate-400 shrink-0" />
+              <span className="text-xs sm:text-sm font-semibold text-slate-800 line-clamp-2 sm:truncate flex-1">
                 {overview.searchQueryTitle}
               </span>
               <button
                 type="button"
                 onClick={onToggleLiveVoice}
-                className={`p-1.5 rounded-full transition-colors ${
+                aria-label="Conversar por voz ao vivo com o Guia"
+                className={`p-2 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-full transition-colors shrink-0 ${
                   voiceStatus === 'live' ? 'bg-rose-600 text-white animate-pulse' : 'text-emerald-800 hover:bg-slate-100'
                 }`}
                 title="Conversar por voz ao vivo com o Guia"
@@ -151,35 +152,37 @@ export const GoogleStyleSearchStage: React.FC<GoogleStyleSearchStageProps> = ({
               </button>
             </div>
 
-            <span className={`px-3 py-1.5 rounded-full text-[11px] font-bold self-start md:self-auto ${palette.badgeBg} ${palette.badgeText}`}>
+            <span className={`hidden sm:inline-block px-3 py-1.5 rounded-full text-[11px] font-bold self-start md:self-auto ${palette.badgeBg} ${palette.badgeText}`}>
               {palette.label}
             </span>
           </div>
 
           {/* 3 Botões Temáticos Principais */}
-          <div className="flex flex-wrap items-center gap-2">
-            {THEME_BUTTONS.map((btn) => {
-              const active = activeTheme === btn.key;
-              return (
-                <button
-                  key={btn.key}
-                  onClick={() => handleChooseTheme(btn.key)}
-                  className={`px-4 py-2 rounded-full text-xs sm:text-sm font-extrabold flex items-center gap-2 transition-all shadow-2xs ${
-                    active
-                      ? `${palette.accentBg} text-white scale-[1.02]`
-                      : 'bg-white hover:bg-slate-50 text-slate-800 border border-slate-300/80'
-                  }`}
-                >
-                  {btn.icon}
-                  <span>{btn.label}</span>
-                </button>
-              );
-            })}
+          <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar pb-0.5 sm:pb-0 sm:flex-wrap">
+              {THEME_BUTTONS.map((btn) => {
+                const active = activeTheme === btn.key;
+                return (
+                  <button
+                    key={btn.key}
+                    onClick={() => handleChooseTheme(btn.key)}
+                    className={`px-3 sm:px-4 py-2 min-h-[38px] rounded-full text-xs sm:text-sm font-extrabold flex items-center gap-1.5 sm:gap-2 transition-all shadow-2xs shrink-0 ${
+                      active
+                        ? `${palette.accentBg} text-white scale-[1.02]`
+                        : 'bg-white hover:bg-slate-50 text-slate-800 border border-slate-300/80'
+                    }`}
+                  >
+                    {btn.icon}
+                    <span>{btn.label}</span>
+                  </button>
+                );
+              })}
+            </div>
 
-            <div className="ml-auto flex items-center gap-1.5 bg-white/80 p-1 rounded-full border border-slate-200">
+            <div className="w-full sm:w-auto sm:ml-auto grid grid-cols-2 sm:inline-flex items-center gap-1.5 bg-white/80 p-1 rounded-full border border-slate-200">
               <button
                 onClick={() => setStageMode('map')}
-                className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 transition-colors ${
+                className={`px-3 py-1.5 sm:py-1 rounded-full text-xs font-bold flex items-center justify-center gap-1.5 transition-colors ${
                   stageMode === 'map' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -187,7 +190,7 @@ export const GoogleStyleSearchStage: React.FC<GoogleStyleSearchStageProps> = ({
               </button>
               <button
                 onClick={() => setStageMode('slides')}
-                className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 transition-colors ${
+                className={`px-3 py-1.5 sm:py-1 rounded-full text-xs font-bold flex items-center justify-center gap-1.5 transition-colors ${
                   stageMode === 'slides' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -199,13 +202,13 @@ export const GoogleStyleSearchStage: React.FC<GoogleStyleSearchStageProps> = ({
       </div>
 
       {/* Corpo Principal em 2 Colunas (Inspirado no Google AI Overview) */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-8 pt-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="max-w-6xl mx-auto px-3 sm:px-8 pt-4 sm:pt-6 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-start">
         {/* Coluna Esquerda (~65%): Mapa/Slides Sincronizados + Síntese IA Grifada + Vídeo & Quiz */}
-        <div className="lg:col-span-8 space-y-5">
+        <div className="lg:col-span-8 space-y-4 sm:space-y-5 min-w-0">
           {/* Bloco Visual Protagonista: Mapa com Pinos OU Carrossel de Slides */}
-          <div className="rounded-3xl overflow-hidden border border-slate-200/90 bg-white shadow-sm">
+          <div className="rounded-2xl sm:rounded-3xl overflow-hidden border border-slate-200/90 bg-white shadow-sm">
             {stageMode === 'map' ? (
-              <div className="h-[340px] sm:h-[400px] w-full relative">
+              <div className="h-[300px] sm:h-[400px] w-full relative">
                 <MapCanvas
                   itens={communities}
                   itemSelecionadoId={activeCommunity.id}
@@ -225,14 +228,14 @@ export const GoogleStyleSearchStage: React.FC<GoogleStyleSearchStageProps> = ({
           </div>
 
           {/* Visão Geral Criada por IA (Adaptada à Idade + Frase Grifada) */}
-          <div className={`rounded-3xl border ${palette.cardBorder} ${palette.cardBg} p-5 sm:p-6 shadow-xs space-y-4`}>
-            <div className="flex items-center justify-between gap-2">
+          <div className={`rounded-2xl sm:rounded-3xl border ${palette.cardBorder} ${palette.cardBg} p-4 sm:p-6 shadow-xs space-y-3.5 sm:space-y-4`}>
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <span className={`text-xs font-extrabold flex items-center gap-1.5 ${palette.accentText}`}>
                 <Sparkles size={15} /> Visão geral adaptada para {visitorAge || 14} anos
               </span>
               <button
                 onClick={() => onToggleStoryAudio(overview.spokenScript)}
-                className="px-3 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center gap-1.5"
+                className="px-3 py-1.5 min-h-[36px] rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center gap-1.5 shrink-0"
               >
                 <Volume2 size={13} /> {isPlayingAudio ? 'Pausar Voz' : 'Ouvir Explicação'}
               </button>
@@ -264,18 +267,18 @@ export const GoogleStyleSearchStage: React.FC<GoogleStyleSearchStageProps> = ({
             )}
 
             {/* Barra flutuante estilo "Pergunte o que quiser" */}
-            <form onSubmit={handleAskSubmit} className="pt-2 flex items-center gap-2">
+            <form onSubmit={handleAskSubmit} className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <input
                 type="text"
                 value={freeQuery}
                 onChange={(e) => setFreeQuery(e.target.value)}
                 placeholder="Pergunte qualquer dúvida sobre este tema para o Guia..."
-                className="flex-1 px-4 py-2.5 rounded-2xl border border-slate-300 bg-slate-50/70 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                className="flex-1 px-4 py-2.5 min-h-[44px] rounded-2xl border border-slate-300 bg-slate-50/70 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600"
               />
               <button
                 type="submit"
                 disabled={loadingReply || !freeQuery.trim()}
-                className="px-4 py-2.5 rounded-2xl bg-slate-900 hover:bg-slate-800 disabled:opacity-40 text-white text-xs font-bold flex items-center gap-1.5"
+                className="px-4 py-2.5 min-h-[44px] rounded-2xl bg-slate-900 hover:bg-slate-800 disabled:opacity-40 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 shrink-0"
               >
                 <Send size={14} /> Perguntar
               </button>
@@ -299,54 +302,56 @@ export const GoogleStyleSearchStage: React.FC<GoogleStyleSearchStageProps> = ({
             Outras Jornadas & Territórios de MT
           </h4>
 
-          {communities.map((item) => {
-            const selected = item.id === activeCommunity.id;
-            const thumb = getCommunityMediaSlides(item.id, item.infografico.url, item.videoEquipe.url)[0]?.url;
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2.5 sm:gap-3">
+            {communities.map((item) => {
+              const selected = item.id === activeCommunity.id;
+              const thumb = getCommunityMediaSlides(item.id, item.infografico.url, item.videoEquipe.url)[0]?.url;
 
-            return (
-              <button
-                key={item.id}
-                onClick={() => handleChoosePinOrCard(item)}
-                className={`w-full text-left rounded-2xl p-3 border transition-all flex items-start gap-3 ${
-                  selected
-                    ? 'bg-white border-emerald-700 ring-2 ring-emerald-700/20 shadow-sm'
-                    : 'bg-white/90 hover:bg-white border-slate-200/90'
-                }`}
-              >
-                {thumb && (
-                  <img
-                    src={thumb}
-                    alt={item.titulo}
-                    className="w-16 h-16 rounded-xl object-cover shrink-0 border border-slate-200"
-                  />
-                )}
-                <div className="min-w-0 flex-1 space-y-1">
-                  <span className="text-[10px] font-bold uppercase tracking-wide text-emerald-800 block truncate">
-                    {item.bioma} · {item.municipio}
-                  </span>
-                  <h5 className="text-xs sm:text-sm font-extrabold text-slate-900 leading-tight line-clamp-1">
-                    {item.titulo}
-                  </h5>
-                  <p className="text-[11px] text-slate-600 leading-snug line-clamp-2">
-                    {item.subtitulo}
-                  </p>
-                </div>
-              </button>
-            );
-          })}
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleChoosePinOrCard(item)}
+                  className={`w-full text-left rounded-2xl p-3 border transition-all flex items-start gap-3 ${
+                    selected
+                      ? 'bg-white border-emerald-700 ring-2 ring-emerald-700/20 shadow-sm'
+                      : 'bg-white/90 hover:bg-white border-slate-200/90'
+                  }`}
+                >
+                  {thumb && (
+                    <img
+                      src={thumb}
+                      alt={item.titulo}
+                      className="w-16 h-16 rounded-xl object-cover shrink-0 border border-slate-200"
+                    />
+                  )}
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-emerald-800 block truncate">
+                      {item.bioma} · {item.municipio}
+                    </span>
+                    <h5 className="text-xs sm:text-sm font-extrabold text-slate-900 leading-tight line-clamp-1">
+                      {item.titulo}
+                    </h5>
+                    <p className="text-[11px] text-slate-600 leading-snug line-clamp-2">
+                      {item.subtitulo}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
 
-          <button
-            onClick={onOpenQuiz}
-            className="w-full p-4 rounded-2xl bg-gradient-to-r from-emerald-900 to-teal-800 text-white text-left flex items-center justify-between gap-3 shadow-sm hover:opacity-95 transition-opacity"
-          >
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-200 block">
-                Desafio Interativo
-              </span>
-              <span className="text-sm font-extrabold">Quiz: 5 de 100 Curiosidades</span>
-            </div>
-            <Award size={22} className="text-amber-300 shrink-0" />
-          </button>
+            <button
+              onClick={onOpenQuiz}
+              className="w-full sm:col-span-2 lg:col-span-1 p-4 rounded-2xl bg-gradient-to-r from-emerald-900 to-teal-800 text-white text-left flex items-center justify-between gap-3 shadow-sm hover:opacity-95 transition-opacity"
+            >
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-200 block">
+                  Desafio Interativo
+                </span>
+                <span className="text-sm font-extrabold">Quiz: 5 de 100 Curiosidades</span>
+              </div>
+              <Award size={22} className="text-amber-300 shrink-0" />
+            </button>
+          </div>
         </aside>
       </div>
     </div>
