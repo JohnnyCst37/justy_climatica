@@ -1,4 +1,5 @@
 import { Router, type Response } from 'express';
+import { buildServerHealthReport } from '../../api/_lib/geminiKeyResolver.js';
 import { getAdminStorage, isAdminReady } from '../config/firebaseAdmin.js';
 import {
   type AuthenticatedRequest,
@@ -30,13 +31,7 @@ export const apiRouter = Router();
 apiRouter.use(rejectClientSuppliedApiKeys);
 
 apiRouter.get('/health', (_req, res: Response) => {
-  res.json({
-    status: 'ok',
-    geminiConfigured: Boolean(
-      (process.env.GEMINI_API_KEY || process.env.API_KEY || process.env.GOOGLE_API_KEY || '').trim()
-    ),
-    firebaseAdminReady: isAdminReady(),
-  });
+  res.json(buildServerHealthReport(isAdminReady()));
 });
 
 apiRouter.post(

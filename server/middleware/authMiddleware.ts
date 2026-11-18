@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
+import { verifyFirebaseIdTokenRS256 } from '../../api/_lib/firebaseJwtVerifier.js';
 import { getAdminAuth, isAdminReady } from '../config/firebaseAdmin.js';
 
 export interface AuthenticatedRequest extends Request {
@@ -59,15 +60,16 @@ export async function requireAuth(req: AuthenticatedRequest, res: Response, next
     ? req.headers['x-classroom-session'].trim()
     : '';
 
+  const allowlist = (process.env.PROFESSOR_ALLOWLIST_EMAILS || '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+
   const adminAuth = getAdminAuth();
   if (bearer && adminAuth) {
     try {
       const decoded = await adminAuth.verifyIdToken(bearer);
       const email = (decoded.email || '').toLowerCase();
-      const allowlist = (process.env.PROFESSOR_ALLOWLIST_EMAILS || '')
-        .split(',')
-        .map((e) => e.trim().toLowerCase())
-        .filter(Boolean);
       const isProf = decoded.role === 'professor' || (Boolean(email) && allowlist.includes(email));
 
       req.authUser = {
@@ -81,6 +83,24 @@ export async function requireAuth(req: AuthenticatedRequest, res: Response, next
       res.status(401).json({ error: 'Sessão expirada ou token inválido. Faça login novamente.' });
       return;
     }
+  }
+
+  // Verificação criptográfica Zero-Trust (RS256 via X.509 públicos do Google, padrão SAD School)
+  if (bearer) {
+    const verifiedRs256 = await verifyFirebaseIdTokenRS256(authHeader);
+    if (verifiedRs256) {
+      const email = (verifiedRs256.email || '').toLowerCase();
+      const isProf = Boolean(email) && allowlist.includes(email);
+      req.authUser = {
+        uid: verifiedRs256.uid,
+        role: isProf ? 'professor' : verifiedRs256.isAnonymous ? 'student' : 'visitor',
+        isAnonymous: verifiedRs256.isAnonymous,
+      };
+      next();
+      return;
+    }
+    res.status(401).json({ error: 'Sessão expirada ou assinatura JWT inválida. Faça login novamente.' });
+    return;
   }
 
   // Modo escola sem Firebase Admin SDK configurado no ambiente local: exige sessão explícita

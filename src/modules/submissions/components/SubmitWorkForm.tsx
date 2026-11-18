@@ -3,6 +3,10 @@ import { Film, Image as ImageIcon, Link2, UploadCloud } from 'lucide-react';
 import type { SchoolWork } from '../../../shared/types/domain';
 import { SCHOOL_CLASS_OPTIONS } from '../../auth/services/accessControlService';
 import { toEmbedVideoUrl } from '../../../shared/utils/videoEmbedResolver';
+import {
+  validateAndReadImageDataUrl,
+  validateClientVideoFile,
+} from '../utils/fileUploadGuard';
 
 interface SubmitWorkFormProps {
   isLoggedIn: boolean;
@@ -66,29 +70,25 @@ export const SubmitWorkForm: React.FC<SubmitWorkFormProps> = ({
     );
   }
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
-      setFeedback('Envie imagens PNG, JPG ou WebP (ou exporte o slide do PowerPoint como imagem).');
-      return;
+    try {
+      const { dataUrl, mime } = await validateAndReadImageDataUrl(file);
+      setFeedback(null);
+      setImageMime(mime);
+      setImageBase64(dataUrl);
+    } catch (err) {
+      setFeedback(err instanceof Error ? err.message : 'Imagem inválida.');
     }
-    setFeedback(null);
-    setImageMime(file.type as 'image/png' | 'image/jpeg' | 'image/webp');
-    const reader = new FileReader();
-    reader.onload = () => setImageBase64(String(reader.result || ''));
-    reader.readAsDataURL(file);
   };
 
   const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!['video/mp4', 'video/webm', 'video/quicktime'].includes(file.type)) {
-      setFeedback('Formato inválido. Envie um vídeo MP4, WebM ou MOV.');
-      return;
-    }
-    if (file.size > 50 * 1024 * 1024) {
-      setFeedback('Vídeo acima de 50 MB. Reduza o tamanho ou use a opção "Colar Link".');
+    const validationErr = validateClientVideoFile(file);
+    if (validationErr) {
+      setFeedback(validationErr);
       return;
     }
     setFeedback(null);

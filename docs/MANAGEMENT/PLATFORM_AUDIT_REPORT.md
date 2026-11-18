@@ -1,6 +1,6 @@
 # 🛡️ Relatório Sentinel v2.0 (justy-climatica)
 
-- **Data:** 16/11/2026, 23:18:39
+- **Data:** 17/11/2026, 09:44:59
 - **CVEs:** Total 4 (Críticas: 0, Altas: 4)
 - **Alertas IA:** Críticos: 0 | Alertas: 0
 - **Catraca Monólitos:** 0 violação(ões)
