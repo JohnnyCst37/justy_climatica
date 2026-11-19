@@ -52,7 +52,8 @@ function isLikelyImageUrl(url: string): boolean {
     url.startsWith('data:image/') ||
     /\.(png|jpe?g|webp|gif|svg)(\?.*)?$/i.test(url) ||
     url.includes('unsplash.com') ||
-    url.startsWith('/images/')
+    url.startsWith('/images/') ||
+    url.startsWith('/assets/images/')
   );
 }
 
@@ -175,6 +176,11 @@ export const SchoolWorksGallery: React.FC<SchoolWorksGalleryProps> = ({
                   </div>
 
                   <div className="flex items-center gap-1 shrink-0">
+                    {work.id.startsWith('seed-') && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                        Padrão da Jornada
+                      </span>
+                    )}
                     {work.status === 'pending' && (
                       <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 flex items-center gap-1">
                         <Clock size={10} /> Aguardando

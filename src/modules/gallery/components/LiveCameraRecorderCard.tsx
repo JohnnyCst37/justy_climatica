@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   Camera,
   CheckCircle2,
-  Download,
   RefreshCw,
   Square,
   UploadCloud,
@@ -56,7 +55,6 @@ export const LiveCameraRecorderCard: React.FC<LiveCameraRecorderCardProps> = ({
     caption: '',
     maxDurationSec: 3600,
     facingMode: 'environment' as 'environment' | 'user',
-    autoDownload: true,
   });
   const [status, setStatus] = useState({ uploadPct: 0, busy: false, feedback: '' });
 
@@ -64,17 +62,14 @@ export const LiveCameraRecorderCard: React.FC<LiveCameraRecorderCardProps> = ({
     const ext = blob.type.includes('mp4') ? 'mp4' : 'webm';
     const fileName = buildOfficialDownloadFilename({ title: meta.title || 'cobertura-live' }, ext);
 
-    if (meta.autoDownload || blob.size > MAX_CLOUD_VIDEO_BYTES) {
+    if (blob.size > MAX_CLOUD_VIDEO_BYTES) {
       const dlUrl = URL.createObjectURL(blob);
       triggerBrowserDownload(dlUrl, fileName);
       window.setTimeout(() => URL.revokeObjectURL(dlUrl), 10_000);
-    }
-
-    if (blob.size > MAX_CLOUD_VIDEO_BYTES) {
       setStatus({
         busy: false,
         uploadPct: 0,
-        feedback: `Gravação longa (${(blob.size / (1024 * 1024)).toFixed(1)} MB) salva no dispositivo com Logo, Escola e Data/Hora!`,
+        feedback: `Gravação longa (${(blob.size / (1024 * 1024)).toFixed(1)} MB > 25 MB): salva localmente no dispositivo com Logo, Escola e Data/Hora!`,
       });
       return;
     }
@@ -115,23 +110,13 @@ export const LiveCameraRecorderCard: React.FC<LiveCameraRecorderCardProps> = ({
     try {
       const blob = await cam.capturePhotoBlob();
       if (!blob) throw new Error('Falha ao capturar foto da câmera.');
-      const published = await onPublishPhoto({
+      await onPublishPhoto({
         fileOrBlob: blob,
         title: meta.title || 'Registro Ao Vivo da Mostra',
         caption: meta.caption || 'Cobertura em tempo real · EE CM João Ribeiro Vilela',
         classOrGuest: meta.classOrGuest || 'Mostra 19/11',
       });
-      if (meta.autoDownload) {
-        const stampedUrl =
-          published && typeof published === 'object' && 'mediaUrl' in published && published.mediaUrl
-            ? published.mediaUrl
-            : URL.createObjectURL(blob);
-        triggerBrowserDownload(stampedUrl, buildOfficialDownloadFilename({ title: meta.title || 'foto-mostra' }, 'jpg'));
-        if (stampedUrl.startsWith('blob:')) {
-          window.setTimeout(() => URL.revokeObjectURL(stampedUrl), 5000);
-        }
-      }
-      setStatus({ busy: false, uploadPct: 0, feedback: 'Foto com Logo, Escola e Data/Hora publicada na Galeria Ao Vivo!' });
+      setStatus({ busy: false, uploadPct: 0, feedback: 'Foto com Logo, Escola e Data/Hora salva no banco e publicada na Galeria!' });
     } catch (err) {
       setStatus({
         busy: false,
@@ -147,19 +132,13 @@ export const LiveCameraRecorderCard: React.FC<LiveCameraRecorderCardProps> = ({
     setStatus({ busy: true, uploadPct: 0, feedback: '' });
     try {
       if (kind === 'photo') {
-        const published = await onPublishPhoto({
+        await onPublishPhoto({
           fileOrBlob: file,
           title: meta.title || 'Registro Fotográfico da Mostra',
           caption: meta.caption || 'Cobertura oficial · EE CM João Ribeiro Vilela',
           classOrGuest: meta.classOrGuest || 'Mostra 19/11',
         });
-        if (meta.autoDownload && published && typeof published === 'object' && published.mediaUrl) {
-          triggerBrowserDownload(
-            published.mediaUrl,
-            buildOfficialDownloadFilename({ title: meta.title || 'foto-mostra' }, 'jpg')
-          );
-        }
-        setStatus({ busy: false, uploadPct: 0, feedback: 'Foto publicada no banco com Logo, Escola e Data/Hora!' });
+        setStatus({ busy: false, uploadPct: 0, feedback: 'Foto salva no banco com Logo, Escola e Data/Hora!' });
       } else {
         if (file.size > MAX_CLOUD_VIDEO_BYTES) {
           throw new Error('Para publicar na Galeria Ao Vivo na nuvem, selecione um vídeo de até 25 MB (ou grave direto pela câmera).');
@@ -239,16 +218,9 @@ export const LiveCameraRecorderCard: React.FC<LiveCameraRecorderCardProps> = ({
           </select>
         </div>
 
-        <label className="flex items-center gap-2 font-semibold text-slate-700 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={meta.autoDownload}
-            onChange={(e) => setMeta((m) => ({ ...m, autoDownload: e.target.checked }))}
-            className="rounded border-slate-300 text-emerald-700"
-          />
-          <Download size={13} className="text-emerald-700" />
-          <span>Baixar p/ PC/Celular com marca d’água</span>
-        </label>
+        <span className="text-[11px] font-semibold text-emerald-900">
+          Publicação direta no banco (download manual apenas quando desejar em /galeria)
+        </span>
       </div>
 
       <video ref={cam.videoRef} playsInline muted className="hidden" />
@@ -302,7 +274,7 @@ export const LiveCameraRecorderCard: React.FC<LiveCameraRecorderCardProps> = ({
               onClick={cam.stopRecording}
               className="px-3 py-2.5 min-h-[44px] rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-300 text-xs font-extrabold flex items-center justify-center gap-1.5"
             >
-              <Square size={14} /> Parar, Baixar & Publicar
+              <Square size={14} /> Parar & Publicar na Galeria
             </button>
           )}
           <button

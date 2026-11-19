@@ -14,10 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import type { CommunityNode, SchoolWork } from '../../../shared/types/domain';
-import {
-  getCommunityMediaSlides,
-  type CommunityMediaSlide,
-} from '../../../shared/data/communityMediaCatalog';
+import type { CommunityMediaSlide } from '../../../shared/data/communityMediaCatalog';
 import { ResolvedVideoPlayer } from '../../../shared/components/ResolvedVideoPlayer';
 import {
   isDirectVideoFileUrl,
@@ -42,13 +39,7 @@ export const HeroMediaBanner: React.FC<HeroMediaBannerProps> = ({
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
 
-  const allBaseSlides = getCommunityMediaSlides(
-    community.id,
-    community.infografico.url,
-    community.videoEquipe.url
-  );
-
-  const studentSlides: CommunityMediaSlide[] = works
+  const slides: CommunityMediaSlide[] = works
     .filter((w) => Boolean(w.mediaUrl))
     .map((w) => ({
       id: `work-${w.id}`,
@@ -59,16 +50,11 @@ export const HeroMediaBanner: React.FC<HeroMediaBannerProps> = ({
       caption: w.description,
     }));
 
-  const baseSlides = allBaseSlides.filter(
-    (b) => b.type === 'photo' && !studentSlides.some((s) => s.url === b.url)
-  );
-
   useEffect(() => {
     setCurrentSlideIndex(0);
-  }, [community.id, studentSlides.length]);
+  }, [community.id, slides.length]);
 
-  const slides = [...studentSlides, ...baseSlides];
-  const activeSlide: CommunityMediaSlide = slides[currentSlideIndex] || slides[0];
+  const activeSlide: CommunityMediaSlide | undefined = slides[currentSlideIndex] || slides[0];
 
   const prevSlide = () => {
     setCurrentSlideIndex((prev) => (prev > 0 ? prev - 1 : slides.length - 1));
@@ -91,6 +77,7 @@ export const HeroMediaBanner: React.FC<HeroMediaBannerProps> = ({
     !embedVideoUrl &&
     (activeUrl.startsWith('data:image/') ||
       activeUrl.startsWith('/images/') ||
+      activeUrl.startsWith('/assets/images/') ||
       /\.(png|jpe?g|webp|gif|svg)(\?.*)?$/i.test(activeUrl) ||
       activeUrl.includes('unsplash.com') ||
       activeUrl.includes('firebasestorage.googleapis.com'));
@@ -139,13 +126,15 @@ export const HeroMediaBanner: React.FC<HeroMediaBannerProps> = ({
         ) : isImage ? (
           <img
             src={activeUrl}
-            alt={activeSlide.title}
+            alt={activeSlide?.title || community.titulo}
             className="w-full h-full object-cover transition-transform duration-500"
           />
         ) : (
           <div className="flex flex-col items-center justify-center p-6 text-center text-slate-300">
             <ImageIcon size={36} className="text-emerald-400 mb-2 opacity-80" />
-            <p className="text-xs font-semibold">{activeSlide?.title}</p>
+            <p className="text-xs font-semibold">
+              {activeSlide?.title || 'Nenhuma mídia cadastrada para este território'}
+            </p>
           </div>
         )}
 
@@ -161,7 +150,7 @@ export const HeroMediaBanner: React.FC<HeroMediaBannerProps> = ({
               </span>
 
               <div className="flex items-center gap-1.5 pointer-events-auto">
-                {activeSlide.type === 'photo' && (
+                {activeSlide?.type === 'photo' && (
                   <button
                     onClick={() => setFullscreenImage(activeSlide.url)}
                     className="w-7 h-7 rounded-lg bg-slate-900/75 hover:bg-slate-900 backdrop-blur-md border border-white/20 text-white flex items-center justify-center transition-colors"
@@ -197,8 +186,8 @@ export const HeroMediaBanner: React.FC<HeroMediaBannerProps> = ({
             <div className="absolute bottom-3 inset-x-3 z-10 text-white space-y-1 pointer-events-none">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs font-semibold text-emerald-300 tracking-wide uppercase flex items-center gap-1">
-                  {activeSlide.type === 'photo' ? <ImageIcon size={12} /> : <Sparkles size={12} />}
-                  {activeSlide.subtitle}
+                  {activeSlide?.type === 'photo' ? <ImageIcon size={12} /> : <Sparkles size={12} />}
+                  {activeSlide?.subtitle}
                 </span>
 
                 {slides.length > 1 && (
@@ -217,10 +206,10 @@ export const HeroMediaBanner: React.FC<HeroMediaBannerProps> = ({
               </div>
 
               <h3 className="text-sm sm:text-base font-extrabold text-white leading-snug drop-shadow-sm line-clamp-1">
-                {activeSlide.title}
+                {activeSlide?.title}
               </h3>
               <p className="text-[11.5px] text-slate-200/90 leading-tight line-clamp-2">
-                {activeSlide.caption}
+                {activeSlide?.caption}
               </p>
             </div>
           </>
@@ -273,7 +262,7 @@ export const HeroMediaBanner: React.FC<HeroMediaBannerProps> = ({
           </span>
           {slides.map((s, idx) => {
             const active = idx === currentSlideIndex;
-            const isStudentWork = s.id.startsWith('work-');
+            const isStudentWork = !s.id.startsWith('work-seed-');
             return (
               <button
                 key={s.id}

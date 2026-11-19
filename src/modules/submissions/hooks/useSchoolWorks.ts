@@ -5,16 +5,20 @@ import {
   approveSchoolWork,
   deleteSchoolWork,
   fetchCommunityWorks,
+  getInstantCommunityWorksPreview,
   submitSchoolWork,
   updateSchoolWork,
 } from '../services/worksService';
 
 export function useSchoolWorks(community: CommunityNode | null, user: UserProfile | null) {
-  const [works, setWorks] = useState<SchoolWork[]>([]);
+  const [works, setWorks] = useState<SchoolWork[]>(() =>
+    community ? getInstantCommunityWorksPreview(community) : []
+  );
   const [loading, setLoading] = useState(false);
 
   const reload = useCallback(async () => {
     if (!community) return;
+    setWorks(getInstantCommunityWorksPreview(community));
     setLoading(true);
     try {
       const list = await fetchCommunityWorks(

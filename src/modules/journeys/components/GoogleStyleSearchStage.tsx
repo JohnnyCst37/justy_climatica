@@ -21,6 +21,7 @@ import { InstitutionalSynergyBar } from '../../../shared/components/Institutiona
 import { resolveBiomePalette } from '../../../shared/utils/biomeThemePalettes';
 import { buildAgeAdaptedOverview } from '../../../shared/utils/ageNarrativeAdapter';
 import { getCommunityMediaSlides } from '../../../shared/data/communityMediaCatalog';
+import { isWorkIdDeletedLocally } from '../../submissions/services/worksService';
 import { MapCanvas } from '../../map/components/MapCanvas';
 import { HeroMediaBanner } from './HeroMediaBanner';
 import { SessionVideosCard } from './SessionVideosCard';
@@ -270,7 +271,11 @@ export const GoogleStyleSearchStage: React.FC<GoogleStyleSearchStageProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2.5 sm:gap-3">
             {communities.map((item) => {
               const selected = item.id === activeCommunity.id;
-              const thumb = getCommunityMediaSlides(item.id, item.infografico.url, item.videoEquipe.url)[0]?.url;
+              const thumb = getCommunityMediaSlides(
+                item.id,
+                item.infografico.url,
+                item.videoEquipe.url
+              ).find((s) => s.url && !isWorkIdDeletedLocally(`seed-${item.id}-${s.id}`))?.url;
 
               return (
                 <button

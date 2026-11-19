@@ -15,6 +15,7 @@ import {
   getFirestoreClient,
 } from '../../../shared/config/firebaseClient';
 import { postApiJson } from '../../../shared/services/apiClient';
+import { getCommunityMediaSlides } from '../../../shared/data/communityMediaCatalog';
 import type { CommunityNode, SchoolWork } from '../../../shared/types/domain';
 import {
   deleteFirestoreVideoChunks,
@@ -91,21 +92,85 @@ function markWorkIdDeleted(id: string): void {
   }
 }
 
-export function buildSeedWorkForCommunity(community: CommunityNode): SchoolWork {
-  return {
-    id: `seed-${community.id}`,
-    communityId: community.id,
-    schoolName: community.escola,
-    classGroup: community.serie,
-    title: community.videoEquipe.titulo || community.infografico.titulo,
-    workType: community.videoEquipe.url ? 'video' : 'infografico',
-    mediaUrl: community.videoEquipe.url || community.infografico.url,
-    description: `${community.equipeAlunos.join(', ')} — ${community.videoEquipe.descricao || community.infografico.legenda}`,
-    authorUid: 'seed',
-    authorLabel: community.orientador,
-    status: 'approved',
-    createdAt: 1730000000000,
-  };
+export function isWorkIdDeletedLocally(id: string): boolean {
+  return loadDeletedWorkIds().includes(id);
+}
+
+export function buildSeedWorksForCommunity(community: CommunityNode): SchoolWork[] {
+  const slides = getCommunityMediaSlides(
+    community.id,
+    community.infografico.url,
+    community.videoEquipe.url
+  );
+  const items: SchoolWork[] = [];
+  const seenUrls = new Set<string>();
+
+  slides.forEach((slide, idx) => {
+    if (!slide.url || seenUrls.has(slide.url)) return;
+    seenUrls.add(slide.url);
+    items.push({
+      id: `seed-${community.id}-${slide.id}`,
+      communityId: community.id,
+      schoolName: community.escola,
+      classGroup: community.serie,
+      title: slide.title,
+      workType:
+        slide.type === 'video'
+          ? 'video'
+          : slide.type === 'infographic'
+          ? 'infografico'
+          : 'foto_campo',
+      mediaUrl: slide.url,
+      description: slide.caption || slide.subtitle,
+      authorUid: 'seed',
+      authorLabel: community.orientador,
+      status: 'approved',
+      createdAt: 1730000000000 - idx * 1000,
+    });
+  });
+
+  return items;
+}
+
+function mergeSeedAndLocalWorks(
+  community: CommunityNode,
+  localMatches: SchoolWork[],
+  remoteAll: SchoolWork[],
+  deletedIds: Set<string>
+): SchoolWork[] {
+  const seeds = buildSeedWorksForCommunity(community);
+  const seedIds = new Set(seeds.map((s) => s.id));
+  const mergedSeeds = seeds
+    .filter((s) => !deletedIds.has(s.id) && !deletedIds.has(`seed-${community.id}`))
+    .map(
+      (s) =>
+        remoteAll.find((r) => r.id === s.id && r.status !== 'deleted') ||
+        localMatches.find((l) => l.id === s.id && l.status !== 'deleted') ||
+        s
+    );
+  const uploaded = [
+    ...remoteAll,
+    ...localMatches.filter(
+      (l) => !remoteAll.some((r) => r.id === l.id || (r.createdAt === l.createdAt && r.title === l.title))
+    ),
+  ]
+    .filter(
+      (w) =>
+        !seedIds.has(w.id) &&
+        w.id !== `seed-${community.id}` &&
+        w.status !== 'deleted' &&
+        !deletedIds.has(w.id) &&
+        Boolean(w.mediaUrl) &&
+        !w.mediaUrl.startsWith('blob:')
+    )
+    .sort((a, b) => b.createdAt - a.createdAt);
+  return [...uploaded, ...mergedSeeds];
+}
+
+export function getInstantCommunityWorksPreview(community: CommunityNode): SchoolWork[] {
+  const deletedIds = new Set(loadDeletedWorkIds());
+  const localMatches = loadLocalWorks().filter((w) => w.communityId === community.id);
+  return mergeSeedAndLocalWorks(community, localMatches, [], deletedIds);
 }
 
 export async function fetchCommunityWorks(
@@ -113,24 +178,13 @@ export async function fetchCommunityWorks(
   currentUid?: string,
   isProfessor = false
 ): Promise<SchoolWork[]> {
-  const seed = buildSeedWorkForCommunity(community);
   const deletedIds = new Set(loadDeletedWorkIds());
   const localAll = loadLocalWorks();
   const localMatches = localAll.filter((w) => w.communityId === community.id);
-  const localSeed = localMatches.find((l) => l.id === seed.id);
   const db = getFirestoreClient();
 
   if (!db) {
-    const base = localMatches
-      .filter(
-        (w) =>
-          w.id !== seed.id &&
-          w.status !== 'deleted' &&
-          !deletedIds.has(w.id) &&
-          !w.mediaUrl.startsWith('blob:')
-      )
-      .sort((a, b) => b.createdAt - a.createdAt);
-    return deletedIds.has(seed.id) ? base : [...base, localSeed || seed];
+    return mergeSeedAndLocalWorks(community, localMatches, [], deletedIds);
   }
 
   try {
@@ -149,14 +203,15 @@ export async function fetchCommunityWorks(
       }
     }
 
-    const remoteSeed = allRemote.find((w) => w.id === seed.id && w.status !== 'deleted');
-    const remote = allRemote.filter(
+    const visibleRemote = allRemote.filter(
       (w) =>
-        w.id !== seed.id &&
         w.status !== 'deleted' &&
         !deletedIds.has(w.id) &&
         !w.mediaUrl.startsWith('blob:') &&
-        (w.status === 'approved' || isProfessor || (currentUid && w.authorUid === currentUid))
+        (w.id.startsWith('seed-') ||
+          w.status === 'approved' ||
+          isProfessor ||
+          (currentUid && w.authorUid === currentUid))
     );
 
     const unsynced = localMatches.filter(
@@ -164,7 +219,7 @@ export async function fetchCommunityWorks(
         l.id.startsWith('local-') &&
         !deletedIds.has(l.id) &&
         l.status !== 'deleted' &&
-        !remote.some((r) => r.createdAt === l.createdAt && r.title === l.title)
+        !visibleRemote.some((r) => r.createdAt === l.createdAt && r.title === l.title)
     );
     if (unsynced.length > 0) {
       const syncedIds = new Map<string, string>();
@@ -174,7 +229,7 @@ export async function fetchCommunityWorks(
           const added = await addDoc(collection(db, 'school_works'), payload).catch(() => null);
           if (added) {
             syncedIds.set(oldId, added.id);
-            remote.push({ id: added.id, ...payload });
+            visibleRemote.push({ id: added.id, ...payload });
           }
         })
       );
@@ -185,28 +240,9 @@ export async function fetchCommunityWorks(
       }
     }
 
-    const remainingLocal = localMatches.filter(
-      (l) =>
-        l.id !== seed.id &&
-        l.status !== 'deleted' &&
-        !deletedIds.has(l.id) &&
-        !l.mediaUrl.startsWith('blob:') &&
-        !remote.some((r) => r.id === l.id || (r.createdAt === l.createdAt && r.title === l.title))
-    );
-    const mergedUploads = [...remote, ...remainingLocal].sort((a, b) => b.createdAt - a.createdAt);
-    const effectiveSeed = deletedIds.has(seed.id) ? null : remoteSeed || localSeed || seed;
-    return effectiveSeed ? [...mergedUploads, effectiveSeed] : mergedUploads;
+    return mergeSeedAndLocalWorks(community, localMatches, visibleRemote, deletedIds);
   } catch {
-    const base = localMatches
-      .filter(
-        (w) =>
-          w.id !== seed.id &&
-          w.status !== 'deleted' &&
-          !deletedIds.has(w.id) &&
-          !w.mediaUrl.startsWith('blob:')
-      )
-      .sort((a, b) => b.createdAt - a.createdAt);
-    return deletedIds.has(seed.id) ? base : [...base, localSeed || seed];
+    return mergeSeedAndLocalWorks(community, localMatches, [], deletedIds);
   }
 }
 

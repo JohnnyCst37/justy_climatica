@@ -1,25 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import {
-  ArrowLeft,
-  Camera,
-  Download,
-  Film,
-  Image as ImageIcon,
-  Maximize2,
-  Radio,
-  RefreshCw,
-  X,
+  ArrowLeft, Camera, Download, Film, Image as ImageIcon,
+  KeyRound, LogOut, Maximize2, Radio, RefreshCw, ShieldCheck, Trash2, X,
 } from 'lucide-react';
 import type { LiveCoverageItem } from '../../../shared/types/domain';
 import { BioPatrimonioLogo } from '../../../shared/components/Icons';
 import { InstitutionalSynergyBar } from '../../../shared/components/InstitutionalSynergyBar';
 import { ResolvedVideoPlayer } from '../../../shared/components/ResolvedVideoPlayer';
+import { useAuthSession } from '../../auth/hooks/useAuthSession';
+import { canAccessCoverageStudio } from '../../auth/services/accessControlService';
 import {
   endPresenceSession,
   heartbeatPresenceSession,
   startPresenceSession,
 } from '../../presence/services/presenceService';
 import {
+  deleteLiveCoverageItem,
   fetchLiveCoverageNow,
   subscribeLiveCoverage,
 } from '../services/liveCoverageService';
@@ -29,16 +25,21 @@ import {
 } from '../utils/mediaWatermarkEngine';
 
 export const PublicLiveGalleryPage: React.FC = () => {
+  const { user, authError, enterWithGoogle, enterWithRolePasscode, logout } = useAuthSession();
+  const canDeleteItems = canAccessCoverageStudio(user);
+
   const [items, setItems] = useState<LiveCoverageItem[]>([]);
   const [filter, setFilter] = useState<'all' | 'photo' | 'video'>('all');
   const [zoomPhoto, setZoomPhoto] = useState<LiveCoverageItem | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [passInput, setPassInput] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const handleManualRefresh = async () => {
     setRefreshing(true);
     try {
-      const latest = await fetchLiveCoverageNow();
-      setItems(latest);
+      setItems(await fetchLiveCoverageNow());
     } finally {
       setRefreshing(false);
     }
@@ -49,7 +50,7 @@ export const PublicLiveGalleryPage: React.FC = () => {
   useEffect(() => {
     let sid = '';
     void startPresenceSession({
-      name: 'Visitante Galeria Live',
+      name: user?.nickname || 'Visitante Galeria Live',
       category: 'outro',
       classGroup: 'Galeria Ao Vivo',
       area: 'galeria_live',
@@ -63,7 +64,30 @@ export const PublicLiveGalleryPage: React.FC = () => {
       window.clearInterval(timer);
       if (sid) void endPresenceSession(sid);
     };
-  }, []);
+  }, [user?.nickname]);
+
+  const handleDeleteItem = async (item: LiveCoverageItem) => {
+    setDeletingId(item.id);
+    try {
+      await deleteLiveCoverageItem(item.id, item.mediaUrl);
+      setItems((prev) => prev.filter((x) => x.id !== item.id));
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handlePasscodeUnlock = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const prof = await enterWithRolePasscode({
+      name: '',
+      disciplineOrClasses: 'Moderação Galeria Live',
+      passcode: passInput,
+    });
+    if (prof) {
+      setPassInput('');
+      setAuthModalOpen(false);
+    }
+  };
 
   const filtered = items.filter((item) => (filter === 'all' ? true : item.mediaType === filter));
 
@@ -86,18 +110,30 @@ export const PublicLiveGalleryPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <a
-            href="/cobertura"
-            className="px-3 py-1.5 min-h-[36px] rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold flex items-center gap-1.5"
-          >
+          {canDeleteItems ? (
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-[11px] font-extrabold text-emerald-950">
+              <ShieldCheck size={13} className="text-emerald-700" />
+              <span>{user?.nickname}</span>
+              <button onClick={() => void logout()} className="text-slate-400 hover:text-rose-700 ml-1" title="Sair do modo moderador">
+                <LogOut size={13} />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setAuthModalOpen(true)}
+              className="px-3 py-1.5 min-h-[36px] rounded-xl bg-amber-100 hover:bg-amber-200 border border-amber-300 text-amber-950 text-xs font-extrabold flex items-center gap-1.5"
+            >
+              <Trash2 size={13} />
+              <span>Liberar Exclusão (Repórter / Admin)</span>
+            </button>
+          )}
+          <a href="/cobertura" className="px-3 py-1.5 min-h-[36px] rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold flex items-center gap-1.5">
             <Camera size={14} className="text-amber-300" />
-            <span>Área do Repórter</span>
+            <span>Estúdio /cobertura</span>
           </a>
-          <a
-            href="/"
-            className="px-3 py-1.5 min-h-[36px] rounded-xl bg-emerald-800 hover:bg-emerald-700 text-white text-xs font-extrabold flex items-center"
-          >
-            Voltar à Jornada
+          <a href="/" className="px-3 py-1.5 min-h-[36px] rounded-xl bg-emerald-800 hover:bg-emerald-700 text-white text-xs font-extrabold flex items-center">
+            Jornada
           </a>
         </div>
       </header>
@@ -109,10 +145,10 @@ export const PublicLiveGalleryPage: React.FC = () => {
               <span className="w-2 h-2 rounded-full bg-white animate-ping" /> Ao Vivo Agora
             </span>
             <h2 className="text-lg sm:text-2xl font-black tracking-tight">
-              Apresentações, Entrevistas & Momentos da Mostra
+              Apresentações, Entrevistas &amp; Momentos da Mostra
             </h2>
             <p className="text-xs sm:text-sm text-emerald-100/90 max-w-2xl">
-              Todos os vídeos e fotos baixados desta cobertura herdam automaticamente o selo do evento, o nome da escola e a data e hora exatas do registro.
+              Baixe quando desejar — fotos e vídeos já trazem o selo oficial, o nome da escola, data e hora.
             </p>
           </div>
 
@@ -121,7 +157,7 @@ export const PublicLiveGalleryPage: React.FC = () => {
               [
                 { key: 'all', label: `Tudo (${items.length})` },
                 { key: 'photo', label: `Fotos (${items.filter((i) => i.mediaType === 'photo').length})` },
-                { key: 'video', label: `Vídeos Live (${items.filter((i) => i.mediaType === 'video').length})` },
+                { key: 'video', label: `Vídeos (${items.filter((i) => i.mediaType === 'video').length})` },
               ] as const
             ).map((tab) => (
               <button
@@ -140,7 +176,6 @@ export const PublicLiveGalleryPage: React.FC = () => {
               disabled={refreshing}
               onClick={() => void handleManualRefresh()}
               className="px-2.5 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold flex items-center gap-1"
-              title="Buscar atualizações agora no banco"
             >
               <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
               <span className="hidden sm:inline">Atualizar</span>
@@ -155,7 +190,7 @@ export const PublicLiveGalleryPage: React.FC = () => {
               Transmissão pronta · Aguardando a primeira foto ou vídeo ao vivo!
             </h3>
             <p className="text-xs text-slate-500 max-w-md mx-auto">
-              Assim que a equipe autorizada registrar uma apresentação ou entrevista em <strong>/cobertura</strong>, ela aparecerá aqui em tempo real para todos acompanharem e baixarem.
+              Assim que a equipe publicar em <strong>/cobertura</strong>, os registros aparecerão aqui em tempo real.
             </p>
           </div>
         ) : (
@@ -194,29 +229,42 @@ export const PublicLiveGalleryPage: React.FC = () => {
                     <p className="text-[10.5px] text-slate-400 font-semibold">Por: {item.reporterName}</p>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() =>
-                      void (item.mediaType === 'photo'
-                        ? downloadWatermarkedPhoto(item.mediaUrl, {
-                            title: item.title,
-                            classOrGuest: item.classOrGuest,
-                            dateLabel: item.eventDateLabel,
-                            timeLabel: item.eventTimeLabel,
-                            timestamp: item.createdAt,
-                          })
-                        : downloadCoverageVideo(item.mediaUrl, {
-                            title: item.title,
-                            classOrGuest: item.classOrGuest,
-                            dateLabel: item.eventDateLabel,
-                            timeLabel: item.eventTimeLabel,
-                            timestamp: item.createdAt,
-                          }))
-                    }
-                    className="w-full py-2.5 px-3 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-white text-xs font-extrabold flex items-center justify-center gap-1.5"
-                  >
-                    <Download size={13} /> Baixar c/ Logo, Escola & Data/Hora
-                  </button>
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void (item.mediaType === 'photo'
+                          ? downloadWatermarkedPhoto(item.mediaUrl, {
+                              title: item.title,
+                              classOrGuest: item.classOrGuest,
+                              dateLabel: item.eventDateLabel,
+                              timeLabel: item.eventTimeLabel,
+                              timestamp: item.createdAt,
+                            })
+                          : downloadCoverageVideo(item.mediaUrl, {
+                              title: item.title,
+                              classOrGuest: item.classOrGuest,
+                              dateLabel: item.eventDateLabel,
+                              timeLabel: item.eventTimeLabel,
+                              timestamp: item.createdAt,
+                            }))
+                      }
+                      className="flex-1 py-2.5 px-3 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-white text-xs font-extrabold flex items-center justify-center gap-1.5"
+                    >
+                      <Download size={13} /> Baixar c/ Selo
+                    </button>
+                    {canDeleteItems && (
+                      <button
+                        type="button"
+                        disabled={deletingId === item.id}
+                        onClick={() => void handleDeleteItem(item)}
+                        className="py-2.5 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-xs font-extrabold flex items-center gap-1 disabled:opacity-50"
+                        title="Excluir registro errado da Galeria"
+                      >
+                        <Trash2 size={13} /> Excluir
+                      </button>
+                    )}
+                  </div>
                 </div>
               </article>
             ))}
@@ -225,6 +273,41 @@ export const PublicLiveGalleryPage: React.FC = () => {
 
         <InstitutionalSynergyBar variant="light" />
       </main>
+
+      {authModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-3" onClick={() => setAuthModalOpen(false)}>
+          <div className="bg-white rounded-2xl max-w-sm w-full p-5 space-y-3 shadow-2xl border border-slate-200 relative" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setAuthModalOpen(false)} className="absolute top-3.5 right-3.5 text-slate-400 hover:text-slate-700">
+              <X size={18} />
+            </button>
+            <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-1.5">
+              <KeyRound size={16} className="text-amber-600" />
+              Liberar Exclusão na Galeria
+            </h3>
+            <button
+              type="button"
+              onClick={() => void enterWithGoogle().then((p) => p && setAuthModalOpen(false))}
+              className="w-full py-2.5 rounded-xl border border-slate-300 bg-slate-50 hover:bg-slate-100 text-xs font-extrabold text-slate-900"
+            >
+              Entrar com Conta Google (Repórter / Admin)
+            </button>
+            <form onSubmit={handlePasscodeUnlock} className="space-y-2 pt-1 border-t border-slate-100">
+              <input
+                type="password"
+                required
+                value={passInput}
+                onChange={(e) => setPassInput(e.target.value)}
+                placeholder="Senha nominal (ex: 2jcjohnny10, reporterjrv01)"
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono"
+              />
+              <button type="submit" className="w-full py-2.5 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-white text-xs font-extrabold">
+                Ativar Botão Excluir
+              </button>
+            </form>
+            {authError && <p className="text-[11px] font-bold text-rose-700">{authError}</p>}
+          </div>
+        </div>
+      )}
 
       {zoomPhoto && (
         <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-xs flex items-center justify-center p-3" onClick={() => setZoomPhoto(null)}>
