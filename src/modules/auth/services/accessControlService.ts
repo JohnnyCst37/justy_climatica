@@ -25,7 +25,8 @@ export const ROLE_LABELS: Record<AuthorizedEmailRole, string> = {
   diretor: 'Diretor(a)',
   coordenador: 'Coordenador(a)',
   professor: 'Professor(a)',
-  cobertura: 'Cobertura da Galeria (Live)',
+  cobertura: 'Repórter · Cobertura (/cobertura)',
+  cinema: 'Monitor(a) · Sala de Cinema (/cinema)',
   lider: 'Aluno(a) Líder',
 };
 
@@ -131,12 +132,18 @@ function getPreapprovedSeedStaffEntries(): AuthorizedEmailEntry[] {
   ];
 }
 
+function defaultGroupForAuthorizedRole(role: AuthorizedEmailRole): string {
+  if (role === 'cobertura') return 'Repórter · Cobertura Live';
+  if (role === 'cinema') return 'Monitoria Sala de Cinema';
+  return '9º Ano A, 9º Ano B, 9º Ano C, 9º Ano D';
+}
+
 function toCleanFirestoreDoc(entry: AuthorizedEmailEntry): Record<string, string | number> {
   const docData: Record<string, string | number> = {
     email: entry.email,
     name: entry.name,
     role: entry.role,
-    classGroup: entry.classGroup || (entry.role === 'cobertura' ? 'Cobertura Live' : '9º Ano A, 9º Ano B, 9º Ano C, 9º Ano D'),
+    classGroup: entry.classGroup || defaultGroupForAuthorizedRole(entry.role),
     status: entry.status || 'approved',
     addedByEmail: entry.addedByEmail,
     createdAt: entry.createdAt,
@@ -205,6 +212,14 @@ export function canAccessCoverageStudio(user: UserProfile | null): boolean {
   );
 }
 
+export function canManageCinemaSessions(user: UserProfile | null): boolean {
+  return (
+    Boolean(user?.email) &&
+    !user?.pendingApproval &&
+    (isStaffRole(user?.role) || user?.role === 'cinema' || user?.role === 'lider')
+  );
+}
+
 async function ensureFirebaseSession(): Promise<void> {
   const auth = getFirebaseAuthClient();
   if (auth && !auth.currentUser) {
@@ -269,8 +284,7 @@ export async function addAuthorizedEmail(
   }
 
   const resolvedClassGroup =
-    input.classGroup?.trim() ||
-    (input.role === 'cobertura' ? 'Cobertura Live' : '9º Ano A, 9º Ano B, 9º Ano C, 9º Ano D');
+    input.classGroup?.trim() || defaultGroupForAuthorizedRole(input.role);
 
   const entry: AuthorizedEmailEntry = {
     email: cleanEmail,
@@ -289,6 +303,36 @@ export async function addAuthorizedEmail(
     await setDoc(doc(db, 'authorized_emails', cleanEmail), toCleanFirestoreDoc(entry)).catch(() => undefined);
   }
   return entry;
+}
+
+export async function updateAuthorizedEmailRole(
+  email: string,
+  nextRole: AuthorizedEmailRole,
+  actorEmail: string
+): Promise<AuthorizedEmailEntry> {
+  const cleanEmail = normalizeEmail(email);
+  if (getSeedSuperAdminEntries().some((s) => s.email === cleanEmail)) {
+    throw new Error('O Super Admin principal mantém privilégios totais.');
+  }
+  const existing = await findAuthorizedEmail(cleanEmail);
+  if (!existing) {
+    throw new Error('E-mail não encontrado.');
+  }
+  const resolvedRole = nextRole === 'super_admin' ? 'professor' : nextRole;
+  const updated: AuthorizedEmailEntry = {
+    ...existing,
+    role: resolvedRole,
+    classGroup: existing.classGroup || defaultGroupForAuthorizedRole(resolvedRole),
+    status: 'approved',
+    addedByEmail: normalizeEmail(actorEmail) || existing.addedByEmail,
+  };
+  upsertLocalEntry(updated);
+  const db = getFirestoreClient();
+  if (db) {
+    await ensureFirebaseSession();
+    await setDoc(doc(db, 'authorized_emails', cleanEmail), toCleanFirestoreDoc(updated)).catch(() => undefined);
+  }
+  return updated;
 }
 
 export async function requestAccessRegistration(input: {
@@ -311,8 +355,7 @@ export async function requestAccessRegistration(input: {
 
   const resolvedRole = input.role === 'super_admin' ? 'professor' : input.role;
   const resolvedClassGroup =
-    input.classGroup?.trim() ||
-    (resolvedRole === 'cobertura' ? 'Cobertura Live' : '9º Ano A, 9º Ano B, 9º Ano C, 9º Ano D');
+    input.classGroup?.trim() || defaultGroupForAuthorizedRole(resolvedRole);
 
   const entry: AuthorizedEmailEntry = {
     email: cleanEmail,
@@ -341,7 +384,7 @@ export async function approveAuthorizedEmail(email: string, approverEmail: strin
 
   const updated: AuthorizedEmailEntry = {
     ...existing,
-    classGroup: existing.classGroup?.trim() || (existing.role === 'cobertura' ? 'Cobertura Live' : '9º Ano A, 9º Ano B, 9º Ano C, 9º Ano D'),
+    classGroup: existing.classGroup?.trim() || defaultGroupForAuthorizedRole(existing.role),
     status: 'approved',
     addedByEmail: normalizeEmail(approverEmail) || 'super_admin',
   };

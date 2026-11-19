@@ -10,6 +10,7 @@ import {
   Users,
 } from 'lucide-react';
 import type { PresenceSessionRecord, VisitorCategory } from '../../../shared/types/domain';
+import { BioPatrimonioLogo } from '../../../shared/components/Icons';
 import { SCHOOL_CLASS_OPTIONS } from '../../auth/services/accessControlService';
 import {
   VISITOR_CATEGORY_LABELS,
@@ -17,6 +18,7 @@ import {
   isSessionActiveOnline,
   subscribePresenceSessions,
 } from '../services/presenceService';
+import { GestoraRadarBanner } from './GestoraRadarBanner';
 
 const CATEGORY_FILTER_OPTIONS: Array<{ key: 'todos' | 'online' | VisitorCategory; label: string }> = [
   { key: 'todos', label: 'Todos' },
@@ -96,6 +98,7 @@ export const LiveAccessDashboardPage: React.FC = () => {
           >
             <ArrowLeft size={16} />
           </a>
+          <BioPatrimonioLogo className="w-8 h-8 hidden sm:block" />
           <div>
             <span className="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wider text-emerald-800">
               <Radio size={12} className="text-rose-600 animate-pulse" /> AO VIVO · Tempo Real
@@ -122,7 +125,9 @@ export const LiveAccessDashboardPage: React.FC = () => {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto p-4 sm:p-8 space-y-6">
+      <main className="max-w-6xl mx-auto p-4 sm:p-8 space-y-5">
+        <GestoraRadarBanner sessions={sessions} now={now} />
+
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
           <div className="bg-white border border-emerald-200 rounded-2xl p-4 shadow-2xs">
             <span className="text-[11px] font-bold text-emerald-800 flex items-center gap-1.5">
@@ -234,6 +239,8 @@ export const LiveAccessDashboardPage: React.FC = () => {
                             ? 'Galeria Live (/galeria)'
                             : s.area === 'estudio_cobertura'
                             ? 'Estúdio Cobertura (/cobertura)'
+                            : s.area === 'sala_cinema'
+                            ? 'Sala de Cinema (/cinema)'
                             : `Mostra · ${s.activeCommunityTitle || 'Início'}`}
                         </span>
                         <span className="font-mono font-bold text-emerald-800 shrink-0">
@@ -301,6 +308,8 @@ export const LiveAccessDashboardPage: React.FC = () => {
                             ? 'Galeria Live (/galeria)'
                             : s.area === 'estudio_cobertura'
                             ? 'Estúdio Cobertura (/cobertura)'
+                            : s.area === 'sala_cinema'
+                            ? 'Sala de Cinema (/cinema)'
                             : `Mostra · ${s.activeCommunityTitle || 'Início'}${s.activeTheme ? ` (${s.activeTheme})` : ''}`}
                         </td>
                         <td className="py-2.5 px-3 whitespace-nowrap font-mono font-bold text-emerald-800">

@@ -10,6 +10,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import type { LiveCoverageItem } from '../../../shared/types/domain';
+import { BioPatrimonioLogo } from '../../../shared/components/Icons';
 import { ResolvedVideoPlayer } from '../../../shared/components/ResolvedVideoPlayer';
 import { useAuthSession } from '../../auth/hooks/useAuthSession';
 import {
@@ -97,6 +98,7 @@ export const LiveCoverageStudioPage: React.FC = () => {
           <a href="/galeria" className="p-2 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 shrink-0" title="Abrir Galeria Live">
             <ArrowLeft size={16} />
           </a>
+          <BioPatrimonioLogo className="w-8 h-8" />
           <div className="min-w-0">
             <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-rose-700 flex items-center gap-1.5">
               <Radio size={12} className="animate-pulse" /> Estúdio Separado · Cobertura Ao Vivo
@@ -188,7 +190,7 @@ export const LiveCoverageStudioPage: React.FC = () => {
                   required
                   value={passInput.code}
                   onChange={(e) => setPassInput((p) => ({ ...p, code: e.target.value }))}
-                  placeholder="Código LIVE-01-JRV..."
+                  placeholder="Senha nominal (ex: reporterjrv01, live-01-jrv)"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm sm:text-xs font-mono"
                 />
                 <button type="submit" className="w-full py-2.5 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-white text-xs font-extrabold flex items-center justify-center gap-1.5">

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   drawOfficialEventWatermark,
+  ensureOfficialLogoLoaded,
   formatEventTimestamp,
 } from '../utils/mediaWatermarkEngine';
 
@@ -80,6 +81,7 @@ export function useLiveCameraRecorder(
     }
     stopCameraTracks();
     setCameraError(null);
+    void ensureOfficialLogoLoaded();
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: nextFacing, width: { ideal: 1280 }, height: { ideal: 720 } },

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Award, Lock, Radio, RotateCcw, Volume2, VolumeX } from 'lucide-react';
+import { Award, Clapperboard, Lock, Radio, RotateCcw, Volume2, VolumeX } from 'lucide-react';
 import { useCommunitiesList } from './shared/hooks/useCommunitiesList';
 import type { AgeGroupKey, ThemeSessionKey, VisitorCategory } from './shared/types/domain';
 import { BioPatrimonioLogo } from './shared/components/Icons';
@@ -15,6 +15,7 @@ import { StandaloneSubmissionPage } from './modules/submissions/components/Stand
 import { LiveAccessDashboardPage } from './modules/presence/components/LiveAccessDashboardPage';
 import { PublicLiveGalleryPage } from './modules/gallery/components/PublicLiveGalleryPage';
 import { LiveCoverageStudioPage } from './modules/gallery/components/LiveCoverageStudioPage';
+import { CinemaRoomPage } from './modules/cinema/components/CinemaRoomPage';
 import {
   endPresenceSession,
   heartbeatPresenceSession,
@@ -23,44 +24,23 @@ import {
 import { GoogleStyleSearchStage } from './modules/journeys/components/GoogleStyleSearchStage';
 import { ClimateQuizModal } from './modules/quiz/components/ClimateQuizModal';
 
-function checkIsSubmitRoute(): boolean {
-  if (typeof window === 'undefined') return false;
-  return (
-    window.location.pathname.startsWith('/enviar') ||
-    new URLSearchParams(window.location.search).get('modo') === 'enviar'
-  );
-}
+type AppRoute = 'mostra' | 'enviar' | 'acessos' | 'galeria' | 'cobertura' | 'cinema';
 
-function checkIsAccessDashboardRoute(): boolean {
-  if (typeof window === 'undefined') return false;
-  return (
-    window.location.pathname.startsWith('/acessos') ||
-    new URLSearchParams(window.location.search).get('modo') === 'acessos'
-  );
-}
-
-function checkIsGalleryRoute(): boolean {
-  if (typeof window === 'undefined') return false;
-  return (
-    window.location.pathname.startsWith('/galeria') ||
-    new URLSearchParams(window.location.search).get('modo') === 'galeria'
-  );
-}
-
-function checkIsCoverageRoute(): boolean {
-  if (typeof window === 'undefined') return false;
-  return (
-    window.location.pathname.startsWith('/cobertura') ||
-    new URLSearchParams(window.location.search).get('modo') === 'cobertura'
-  );
+function resolveAppRoute(): AppRoute {
+  if (typeof window === 'undefined') return 'mostra';
+  const path = window.location.pathname;
+  const modo = new URLSearchParams(window.location.search).get('modo');
+  if (path.startsWith('/enviar') || modo === 'enviar') return 'enviar';
+  if (path.startsWith('/acessos') || modo === 'acessos') return 'acessos';
+  if (path.startsWith('/galeria') || modo === 'galeria') return 'galeria';
+  if (path.startsWith('/cobertura') || modo === 'cobertura') return 'cobertura';
+  if (path.startsWith('/cinema') || modo === 'cinema') return 'cinema';
+  return 'mostra';
 }
 
 export const App: React.FC = () => {
   const { communities: allCommunities } = useCommunitiesList();
-  const [isSubmitRoute, setIsSubmitRoute] = useState<boolean>(checkIsSubmitRoute);
-  const [isAccessRoute, setIsAccessRoute] = useState<boolean>(checkIsAccessDashboardRoute);
-  const [isGalleryRoute, setIsGalleryRoute] = useState<boolean>(checkIsGalleryRoute);
-  const [isCoverageRoute, setIsCoverageRoute] = useState<boolean>(checkIsCoverageRoute);
+  const [route, setRoute] = useState<AppRoute>(resolveAppRoute);
   const [selectedId, setSelectedId] = useState<string>(allCommunities[0]?.id || '');
   const [visitorSession, setVisitorSession] = useState<{
     age: number;
@@ -76,19 +56,14 @@ export const App: React.FC = () => {
   const [quizOpen, setQuizOpen] = useState(false);
   const [lyriaMuted, setLyriaMuted] = useState(true);
 
-  const { user, enterWithClassroom, logout } = useAuthSession();
+  const { user, authError, enterWithClassroom, enterWithGoogle, logout } = useAuthSession();
 
   useEffect(() => {
     lyriaEngine.setMuted(lyriaMuted);
   }, [lyriaMuted]);
 
   useEffect(() => {
-    const onPopState = () => {
-      setIsSubmitRoute(checkIsSubmitRoute());
-      setIsAccessRoute(checkIsAccessDashboardRoute());
-      setIsGalleryRoute(checkIsGalleryRoute());
-      setIsCoverageRoute(checkIsCoverageRoute());
-    };
+    const onPopState = () => setRoute(resolveAppRoute());
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
@@ -165,6 +140,35 @@ export const App: React.FC = () => {
     [enterWithClassroom, activeCommunity?.titulo]
   );
 
+  const handleStartVisitorWithGoogle = useCallback(
+    async (input: {
+      age: number;
+      ageGroup: AgeGroupKey;
+      category: VisitorCategory;
+      classGroup: string;
+    }) => {
+      const profile = await enterWithGoogle();
+      if (!profile) return false;
+      setVisitorSession(input);
+      setKioskActive(true);
+      setUnlockedByProfessor(false);
+      setActiveTheme('justica');
+      setQuizOpen(false);
+      const sid = await startPresenceSession({
+        name: profile.nickname,
+        category: input.category,
+        classGroup: input.classGroup,
+        age: input.age,
+        area: 'mostra',
+        activeCommunityTitle: activeCommunity?.titulo,
+        activeTheme: 'justica',
+      });
+      presenceSessionIdRef.current = sid;
+      return true;
+    },
+    [enterWithGoogle, activeCommunity?.titulo]
+  );
+
   useEffect(() => {
     if (!visitorSession || !presenceSessionIdRef.current) return;
     void heartbeatPresenceSession(presenceSessionIdRef.current, {
@@ -214,19 +218,23 @@ export const App: React.FC = () => {
     lyriaEngine.setMuted(next);
   }, [lyriaMuted]);
 
-  if (isCoverageRoute) {
+  if (route === 'cinema') {
+    return <CinemaRoomPage />;
+  }
+
+  if (route === 'cobertura') {
     return <LiveCoverageStudioPage />;
   }
 
-  if (isGalleryRoute) {
+  if (route === 'galeria') {
     return <PublicLiveGalleryPage />;
   }
 
-  if (isAccessRoute) {
+  if (route === 'acessos') {
     return <LiveAccessDashboardPage />;
   }
 
-  if (isSubmitRoute) {
+  if (route === 'enviar') {
     return <StandaloneSubmissionPage />;
   }
 
@@ -234,6 +242,8 @@ export const App: React.FC = () => {
     return (
       <EventCoverScreen
         onStartVisitor={handleStartVisitor}
+        onStartWithGoogle={handleStartVisitorWithGoogle}
+        authError={authError}
         onSpeakWelcome={(txt) => void assistant.speakText(txt)}
         isSpeakingWelcome={assistant.isPlayingAudio || assistant.isAudioLoading}
       />
@@ -268,6 +278,15 @@ export const App: React.FC = () => {
             {lyriaMuted ? <VolumeX size={15} className="text-rose-600" /> : <Volume2 size={15} className="text-emerald-700" />}
             <span className="hidden sm:inline">{lyriaMuted ? 'Som mudo' : 'Trilha Lyria'}</span>
           </button>
+
+          <a
+            href="/cinema"
+            className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 min-h-[36px] rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-950 text-xs font-extrabold shadow-2xs"
+            title="Abrir Sala de Cinema (Sessões e Quiz)"
+          >
+            <Clapperboard size={14} className="text-amber-700" />
+            <span>Cinema</span>
+          </a>
 
           <a
             href="/galeria"
@@ -361,7 +380,7 @@ export const App: React.FC = () => {
         onOpenSubmitRoute={() => {
           window.history.pushState({}, '', '/enviar');
           setAdminPromptOpen(false);
-          setIsSubmitRoute(true);
+          setRoute('enviar');
         }}
       />
     </div>

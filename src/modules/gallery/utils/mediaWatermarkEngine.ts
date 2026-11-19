@@ -43,8 +43,30 @@ function slugifyFileName(text: string): string {
   );
 }
 
+let cachedLogoPromise: Promise<HTMLImageElement | null> | null = null;
+let cachedLogoImg: HTMLImageElement | null = null;
+
+export function ensureOfficialLogoLoaded(): Promise<HTMLImageElement | null> {
+  if (typeof Image === 'undefined') return Promise.resolve(null);
+  if (cachedLogoImg && cachedLogoImg.complete && cachedLogoImg.naturalWidth > 0) {
+    return Promise.resolve(cachedLogoImg);
+  }
+  if (!cachedLogoPromise) {
+    cachedLogoPromise = new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        cachedLogoImg = img;
+        resolve(img);
+      };
+      img.onerror = () => resolve(null);
+      img.src = '/logo-jc.png';
+    });
+  }
+  return cachedLogoPromise;
+}
+
 /**
- * Desenha a Logo oficial do Evento, Nome da Escola, Data/Ano/Hora e legenda no Canvas.
+ * Desenha a Logo oficial do Evento (`Logo_JC.png`), Nome da Escola, Data/Ano/Hora e legenda no Canvas.
  * Utilizado tanto em fotos quanto em quadros de vídeo gravados em tempo real.
  */
 export function drawOfficialEventWatermark(
@@ -67,31 +89,33 @@ export function drawOfficialEventWatermark(
   ctx.fillRect(0, yStart - 20, width, barHeight + 20);
 
   const padX = Math.max(14, Math.round(width * 0.022));
-  const badgeSize = Math.max(36, Math.round(barHeight * 0.56));
+  const badgeSize = Math.max(40, Math.round(barHeight * 0.64));
   const badgeX = padX;
   const badgeY = yStart + Math.round((barHeight - badgeSize) / 2);
 
-  // Escudo vetorial oficial do evento (Vozes do Clima MT)
+  // Moldura com Logo oficial do Evento (`Logo_JC.png`)
   ctx.save();
-  ctx.fillStyle = '#065f46';
-  ctx.strokeStyle = '#fbbf24';
-  ctx.lineWidth = Math.max(2, Math.round(badgeSize * 0.06));
+  const radius = Math.round(badgeSize * 0.2);
   ctx.beginPath();
-  ctx.roundRect(badgeX, badgeY, badgeSize, badgeSize, Math.round(badgeSize * 0.24));
-  ctx.fill();
-  ctx.stroke();
+  ctx.roundRect(badgeX, badgeY, badgeSize, badgeSize, radius);
+  ctx.clip();
+  if (cachedLogoImg && cachedLogoImg.complete && cachedLogoImg.naturalWidth > 0) {
+    ctx.drawImage(cachedLogoImg, badgeX, badgeY, badgeSize, badgeSize);
+  } else {
+    ctx.fillStyle = '#065f46';
+    ctx.fillRect(badgeX, badgeY, badgeSize, badgeSize);
+    ctx.fillStyle = '#34d399';
+    ctx.beginPath();
+    ctx.ellipse(badgeX + badgeSize / 2, badgeY + badgeSize / 2, badgeSize * 0.24, badgeSize * 0.3, -0.35, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
 
-  const cx = badgeX + badgeSize / 2;
-  const cy = badgeY + badgeSize / 2;
-  ctx.fillStyle = '#34d399';
+  ctx.save();
+  ctx.strokeStyle = '#fbbf24';
+  ctx.lineWidth = Math.max(1.5, Math.round(badgeSize * 0.045));
   ctx.beginPath();
-  ctx.ellipse(cx, cy - badgeSize * 0.04, badgeSize * 0.22, badgeSize * 0.3, -0.35, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = '#fef3c7';
-  ctx.lineWidth = 1.6;
-  ctx.beginPath();
-  ctx.moveTo(cx - badgeSize * 0.12, cy + badgeSize * 0.2);
-  ctx.lineTo(cx + badgeSize * 0.12, cy - badgeSize * 0.2);
+  ctx.roundRect(badgeX, badgeY, badgeSize, badgeSize, radius);
   ctx.stroke();
   ctx.restore();
 
@@ -152,7 +176,7 @@ export async function stampPhotoFileWithWatermark(
 ): Promise<string> {
   const objectUrl = URL.createObjectURL(fileOrBlob);
   try {
-    const img = await loadImageElement(objectUrl);
+    const [img] = await Promise.all([loadImageElement(objectUrl), ensureOfficialLogoLoaded()]);
     const maxW = 1280;
     const scale = img.width > maxW ? maxW / img.width : 1;
     const width = Math.max(640, Math.round(img.width * scale));
@@ -204,7 +228,7 @@ export async function downloadWatermarkedPhoto(
 ): Promise<void> {
   const fileName = buildOfficialDownloadFilename(meta, 'jpg');
   try {
-    const img = await loadImageElement(imageUrl);
+    const [img] = await Promise.all([loadImageElement(imageUrl), ensureOfficialLogoLoaded()]);
     const canvas = document.createElement('canvas');
     canvas.width = img.width || 1280;
     canvas.height = img.height || 720;

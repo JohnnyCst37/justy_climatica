@@ -14,19 +14,11 @@ import {
 } from 'lucide-react';
 
 export const BioPatrimonioLogo: React.FC<{ className?: string }> = ({ className = 'w-6 h-6' }) => (
-  <svg
-    viewBox="0 0 48 48"
-    className={`fill-none stroke-current ${className}`}
-    strokeWidth="2.2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <circle cx="24" cy="24" r="21" className="fill-emerald-800/10 stroke-emerald-800" strokeWidth="2.5" />
-    <circle cx="16" cy="15" r="4" className="fill-amber-400 stroke-amber-500" />
-    <path d="M7 32 C14 27, 20 37, 28 32 C34 28, 38 33, 41 31" className="stroke-sky-600" strokeWidth="2.5" />
-    <path d="M24 33 V18" className="stroke-emerald-800" strokeWidth="2.5" />
-    <path d="M24 23 C18 20, 16 14, 24 12 C32 14, 30 20, 24 23 Z" className="fill-emerald-600 stroke-emerald-800" />
-  </svg>
+  <img
+    src="/logo-jc.png"
+    alt="Jornada da Justiça Climática · EE CM João Ribeiro Vilela"
+    className={`rounded-xl object-cover border border-emerald-700/30 shadow-2xs shrink-0 ${className}`}
+  />
 );
 
 export const GrupoIcon: React.FC<{ grupoId: string; className?: string }> = ({

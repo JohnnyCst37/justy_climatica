@@ -21,7 +21,11 @@ import {
   findAuthorizedEmail,
   requestAccessRegistration,
 } from './accessControlService';
-import { resolveStaffRoleByPasscode } from './rolePasscodesService';
+import {
+  resolveNominalOwnerByPasscode,
+  resolveStaffRoleByPasscode,
+  syncExtraProfessorPasscodesFromFirestore,
+} from './rolePasscodesService';
 
 const LOCAL_PROFILE_KEY = 'justy_climatica_user_profile_v1';
 
@@ -142,14 +146,19 @@ export async function loginWithRolePasscode(input: {
   disciplineOrClasses: string;
   passcode: string;
 }): Promise<UserProfile> {
-  const role = resolveStaffRoleByPasscode(input.passcode);
+  let role = resolveStaffRoleByPasscode(input.passcode);
+  if (!role) {
+    await syncExtraProfessorPasscodesFromFirestore();
+    role = resolveStaffRoleByPasscode(input.passcode);
+  }
   if (!role) {
     throw new Error(
-      'Senha de acesso inválida. Peça o código correto (Professor, Coordenador ou Diretor) ao Super Admin.'
+      'Senha nominal inválida. Verifique seu código (ex: 2jcjohnny10, samanthajrv26, denisejrv26, reporterjrv01, cinealuno01).'
     );
   }
 
-  const cleanName = input.name.trim().slice(0, 48) || ROLE_LABELS[role];
+  const nominalOwner = resolveNominalOwnerByPasscode(input.passcode);
+  const cleanName = input.name.trim().slice(0, 48) || nominalOwner || ROLE_LABELS[role];
   const slug =
     cleanName
       .toLowerCase()

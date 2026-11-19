@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Activity, ArrowLeft, Camera, Check, KeyRound, LogOut,
+  Activity, ArrowLeft, Camera, Check, Clapperboard, KeyRound, LogOut,
   MapPinPlus, Radio, School, Share2, Shield, Users,
 } from 'lucide-react';
+import { BioPatrimonioLogo } from '../../../shared/components/Icons';
 import type { AuthorizedEmailRole, CommunityNode } from '../../../shared/types/domain';
 import { useCommunitiesList } from '../../../shared/hooks/useCommunitiesList';
 import { useAuthSession } from '../../auth/hooks/useAuthSession';
@@ -99,6 +100,7 @@ export const StandaloneSubmissionPage: React.FC = () => {
           <a href="/" className="p-2 min-w-[38px] min-h-[38px] flex items-center justify-center rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 shrink-0" title="Voltar para a Mostra">
             <ArrowLeft size={16} />
           </a>
+          <BioPatrimonioLogo className="w-8 h-8 hidden sm:block" />
           <div className="min-w-0">
             <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wide text-emerald-800 flex items-center gap-1 truncate">
               <School size={12} className="shrink-0" /> <span className="truncate">Área Restrita · Professores, Coordenação & Líderes</span>
@@ -123,6 +125,15 @@ export const StandaloneSubmissionPage: React.FC = () => {
           )}
           {hasAccess && isStaff && (
             <>
+              <a
+                href="/cinema"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-2.5 sm:px-3 py-1.5 min-h-[36px] rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-950 text-[11px] sm:text-xs font-extrabold flex items-center gap-1.5"
+              >
+                <Clapperboard size={14} className="text-amber-700 shrink-0" />
+                <span>Cinema</span>
+              </a>
               <a
                 href="/galeria"
                 target="_blank"
@@ -256,7 +267,7 @@ export const StandaloneSubmissionPage: React.FC = () => {
         <StaffEmailManagerModal isOpen={emailManagerOpen} actorEmail={user.email} actorRole={user.role} onClose={() => setEmailManagerOpen(false)} />
       )}
       {user?.role === 'super_admin' && (
-        <RolePasscodesModal isOpen={passcodesOpen} onClose={() => setPasscodesOpen(false)} />
+        <RolePasscodesModal isOpen={passcodesOpen} actorEmail={user.email} onClose={() => setPasscodesOpen(false)} />
       )}
     </div>
   );

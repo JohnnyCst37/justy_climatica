@@ -14,6 +14,7 @@ export type UserRole =
   | 'visitor'
   | 'student'
   | 'lider'
+  | 'cinema'
   | 'professor'
   | 'cobertura'
   | 'coordenador'
@@ -26,6 +27,7 @@ export type AuthorizedEmailRole =
   | 'coordenador'
   | 'professor'
   | 'cobertura'
+  | 'cinema'
   | 'lider';
 
 export interface AuthorizedEmailEntry {
@@ -204,8 +206,33 @@ export interface PresenceSessionRecord {
   endedAt?: number;
   activeCommunityTitle?: string;
   activeTheme?: string;
-  area: 'mostra' | 'portal_envio' | 'galeria_live' | 'estudio_cobertura';
+  area: 'mostra' | 'portal_envio' | 'galeria_live' | 'estudio_cobertura' | 'sala_cinema';
   isOnline: boolean;
+}
+
+export interface CinemaPlaylistVideo {
+  id: string;
+  title: string;
+  mediaUrl: string;
+  communityTitle: string;
+  classGroup: string;
+  description?: string;
+}
+
+export interface CinemaSessionRecord {
+  id: string;
+  title: string;
+  theme: ThemeSessionKey;
+  communityId: string;
+  communityTitle: string;
+  hostsLabel: string;
+  createdByName: string;
+  createdByEmail?: string;
+  videos: CinemaPlaylistVideo[];
+  quizQuestions: QuizQuestion[];
+  status: 'aguardando' | 'exibindo' | 'quiz' | 'encerrada';
+  activeVideoIndex: number;
+  createdAt: number;
 }
 
 export interface LiveCoverageItem {

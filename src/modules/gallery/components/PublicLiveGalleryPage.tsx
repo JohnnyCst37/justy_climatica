@@ -10,6 +10,7 @@ import {
   X,
 } from 'lucide-react';
 import type { LiveCoverageItem } from '../../../shared/types/domain';
+import { BioPatrimonioLogo } from '../../../shared/components/Icons';
 import { ResolvedVideoPlayer } from '../../../shared/components/ResolvedVideoPlayer';
 import {
   endPresenceSession,
@@ -57,6 +58,7 @@ export const PublicLiveGalleryPage: React.FC = () => {
           <a href="/" className="p-2 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 shrink-0" title="Voltar à Tela Inicial">
             <ArrowLeft size={16} />
           </a>
+          <BioPatrimonioLogo className="w-8 h-8" />
           <div className="min-w-0">
             <span className="inline-flex items-center gap-1.5 text-[10.5px] sm:text-[11px] font-extrabold uppercase tracking-wider text-rose-700">
               <Radio size={12} className="animate-pulse" /> LIVE · Cobertura em Tempo Real

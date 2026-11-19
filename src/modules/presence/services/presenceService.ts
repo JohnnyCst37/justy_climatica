@@ -19,33 +19,33 @@ const LOCAL_PRESENCE_KEY = 'justy_presence_sessions_v1';
 
 export const VISITOR_CATEGORY_LABELS: Record<VisitorCategory, string> = {
   estudante: 'Estudante',
-  professor: 'Professor(a)',
-  coordenador: 'Coordenador(a)',
+  professor: 'Equipe Escolar',
+  coordenador: 'Coordenação / Secretaria',
   diretor: 'Diretor(a)',
-  dre: 'Representante da DRE',
-  outro: 'Outro / Visitante',
+  dre: 'DRE / Gestão Educacional',
+  outro: 'Outros / Visitante',
 };
 
 export function mapAuthRoleToVisitorCategory(role?: UserRole): VisitorCategory {
   if (role === 'coordenador') return 'coordenador';
   if (role === 'diretor') return 'diretor';
   if (role === 'professor' || role === 'super_admin') return 'professor';
-  if (role === 'lider' || role === 'student') return 'estudante';
+  if (role === 'lider' || role === 'student' || role === 'cinema') return 'estudante';
   return 'outro';
 }
 
 export function defaultGroupForCategory(category: VisitorCategory): string {
   switch (category) {
     case 'professor':
-      return 'Docente';
+      return 'Equipe Escolar · EE CM João Ribeiro Vilela';
     case 'coordenador':
-      return 'Coordenação';
+      return 'Coordenação / Secretaria';
     case 'diretor':
       return 'Direção Escolar';
     case 'dre':
-      return 'DRE / Seduc-MT';
+      return 'DRE / Gestão Educacional (Seduc-MT)';
     case 'outro':
-      return 'Comunidade / Visitante';
+      return 'Visitante / Comunidade';
     case 'estudante':
       return '9º Ano A';
   }

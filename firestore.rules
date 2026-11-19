@@ -57,6 +57,16 @@ service cloud.firestore {
       allow create, update, delete: if isSignedIn();
     }
 
+    // Sessões da Sala de Cinema Coletiva (coletânea de vídeos + quiz ao vivo)
+    match /cinema_sessions/{sessionId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Lotes dinâmicos de senhas extras geradas para docentes
+    match /role_passcode_batches/{batchId} {
+      allow read, write: if isSignedIn();
+    }
+
     // Monitoramento de acessos em tempo real e tempo logado
     match /presence_sessions/{sessionId} {
       allow read, write: if isSignedIn();

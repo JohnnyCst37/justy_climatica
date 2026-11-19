@@ -18,6 +18,7 @@ import {
   approveAuthorizedEmail,
   listAuthorizedEmails,
   removeAuthorizedEmail,
+  updateAuthorizedEmailRole,
 } from '../services/accessControlService';
 
 interface StaffEmailManagerModalProps {
@@ -43,8 +44,8 @@ export const StaffEmailManagerModal: React.FC<StaffEmailManagerModalProps> = ({
 
   const isSuperAdmin = actorRole === 'super_admin';
   const availableRoles: AuthorizedEmailRole[] = isSuperAdmin
-    ? ['diretor', 'coordenador', 'professor', 'cobertura', 'lider']
-    : ['lider', 'professor', 'cobertura'];
+    ? ['diretor', 'coordenador', 'professor', 'cobertura', 'cinema', 'lider']
+    : ['lider', 'professor', 'cobertura', 'cinema'];
 
   const refresh = useCallback(async () => {
     const list = await listAuthorizedEmails();
@@ -100,6 +101,17 @@ export const StaffEmailManagerModal: React.FC<StaffEmailManagerModalProps> = ({
       await refresh();
     } catch (err) {
       setFeedback(err instanceof Error ? err.message : 'Não foi possível remover.');
+    }
+  };
+
+  const handleChangeRole = async (targetEmail: string, nextRole: AuthorizedEmailRole) => {
+    setFeedback(null);
+    try {
+      await updateAuthorizedEmailRole(targetEmail, nextRole, actorEmail);
+      setFeedback(`Cargo atualizado para ${ROLE_LABELS[nextRole]} (${targetEmail}).`);
+      await refresh();
+    } catch (err) {
+      setFeedback(err instanceof Error ? err.message : 'Erro ao atualizar cargo.');
     }
   };
 
@@ -217,7 +229,9 @@ export const StaffEmailManagerModal: React.FC<StaffEmailManagerModalProps> = ({
                 role === 'lider'
                   ? 'Turma do aluno (ex: 9º Ano B)'
                   : role === 'cobertura'
-                  ? 'Setor (ex: Imprensa / Galeria Live)'
+                  ? 'Setor (ex: Repórter Galeria Live)'
+                  : role === 'cinema'
+                  ? 'Sala / Dupla (ex: Sala 10 · João e Maria)'
                   : 'Várias turmas (opcional, ex: 9º A, B, C e D)'
               }
               className="px-3 py-2 text-xs border border-slate-300 rounded-xl bg-white"
@@ -235,7 +249,13 @@ export const StaffEmailManagerModal: React.FC<StaffEmailManagerModalProps> = ({
 
           {role === 'cobertura' && (
             <p className="text-[11px] font-semibold text-amber-900 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
-              Este e-mail terá acesso exclusivo ao endereço separado <strong>/cobertura</strong> para gravar vídeos (1 a 60 min), tirar fotos e publicar na <strong>Galeria Ao Vivo (/galeria)</strong>.
+              <strong>Repórter Oficial:</strong> terá acesso exclusivo ao endereço separado <strong>/cobertura</strong> para gravar vídeos (1 a 60 min), tirar fotos e publicar na <strong>Galeria Ao Vivo (/galeria)</strong>.
+            </p>
+          )}
+
+          {role === 'cinema' && (
+            <p className="text-[11px] font-semibold text-sky-900 bg-sky-50 border border-sky-200 rounded-xl px-3 py-2">
+              <strong>Monitor(a) da Sala de Cinema:</strong> poderá criar sessões coletivas em <strong>/cinema</strong>, selecionar coletânea de vídeos e acionar o Quiz de 5 perguntas com Voz Fluida da IA.
             </p>
           )}
 
@@ -271,14 +291,28 @@ export const StaffEmailManagerModal: React.FC<StaffEmailManagerModalProps> = ({
               </div>
 
               {entry.role !== 'super_admin' && (
-                <button
-                  type="button"
-                  onClick={() => void handleRemove(entry.email)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-700 hover:bg-rose-50"
-                  title="Revogar acesso"
-                >
-                  <Trash2 size={14} />
-                </button>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <select
+                    aria-label={`Alterar cargo de ${entry.email}`}
+                    value={entry.role}
+                    onChange={(e) => void handleChangeRole(entry.email, e.target.value as AuthorizedEmailRole)}
+                    className="px-2 py-1 rounded-lg border border-slate-300 bg-slate-50 text-[11px] font-bold text-slate-800 max-w-[165px]"
+                  >
+                    {availableRoles.map((r) => (
+                      <option key={r} value={r}>
+                        {ROLE_LABELS[r]}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => void handleRemove(entry.email)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-700 hover:bg-rose-50"
+                    title="Revogar acesso"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               )}
             </div>
           ))}

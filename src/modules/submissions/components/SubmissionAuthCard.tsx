@@ -218,7 +218,7 @@ export const SubmissionAuthCard: React.FC<SubmissionAuthCardProps> = ({
                   type="password"
                   value={passcodeInput}
                   onChange={(e) => setPasscodeInput(e.target.value)}
-                  placeholder="Senha do perfil (ex: PROF-01-JRV)"
+                  placeholder="Senha nominal (ex: 2jcjohnny10, samanthajrv26)"
                   required
                   className="w-full px-3.5 py-2 text-xs border border-emerald-400 bg-emerald-50/30 rounded-xl font-mono"
                 />
@@ -280,6 +280,8 @@ export const SubmissionAuthCard: React.FC<SubmissionAuthCardProps> = ({
                     className="px-3 py-2 text-xs border border-slate-300 rounded-xl bg-white font-bold"
                   >
                     <option value="professor">Professor(a)</option>
+                    <option value="cobertura">Repórter · Galeria Live (/cobertura)</option>
+                    <option value="cinema">Monitor(a) · Sala de Cinema (/cinema)</option>
                     <option value="coordenador">Coordenador(a)</option>
                     <option value="diretor">Diretor(a)</option>
                     <option value="lider">Aluno(a) Líder de Grupo</option>
