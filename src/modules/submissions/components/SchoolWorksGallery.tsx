@@ -162,9 +162,9 @@ export const SchoolWorksGallery: React.FC<SchoolWorksGalleryProps> = ({
 
             return (
               <div key={work.id} className="bg-white border border-slate-200 rounded-xl p-3 space-y-2">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <span className="text-[10.5px] font-bold text-emerald-800 uppercase tracking-wide flex items-center gap-1">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <span className="text-[10.5px] font-bold text-emerald-800 uppercase tracking-wide flex items-center gap-1 flex-wrap">
                       {work.workType === 'slide_powerpoint' && <Presentation size={12} />}
                       {work.workType === 'video' && <Video size={12} />}
                       {(work.workType === 'infografico' || work.workType === 'foto_campo') && (
@@ -175,7 +175,7 @@ export const SchoolWorksGallery: React.FC<SchoolWorksGalleryProps> = ({
                     <h4 className="text-xs font-bold text-slate-900 mt-0.5">{work.title}</h4>
                   </div>
 
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex items-center gap-1.5 flex-wrap shrink-0">
                     {work.id.startsWith('seed-') && (
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
                         Padrão da Jornada
@@ -190,10 +190,10 @@ export const SchoolWorksGallery: React.FC<SchoolWorksGalleryProps> = ({
                       <button
                         type="button"
                         onClick={() => (editingId === work.id ? setEditingId(null) : startEdit(work))}
-                        className="p-1.5 rounded-lg text-slate-500 hover:text-emerald-800 hover:bg-emerald-50"
+                        className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 hover:text-emerald-800 hover:bg-emerald-50 text-[11px] font-bold flex items-center gap-1"
                         title="Editar publicação (inclusive padrão)"
                       >
-                        <Pencil size={13} />
+                        <Pencil size={12} /> <span>Editar</span>
                       </button>
                     )}
                     {isProfessor && onDelete && (
@@ -201,10 +201,10 @@ export const SchoolWorksGallery: React.FC<SchoolWorksGalleryProps> = ({
                         type="button"
                         disabled={deletingId === work.id}
                         onClick={() => void handleDelete(work)}
-                        className="p-1.5 rounded-lg text-slate-500 hover:text-rose-700 hover:bg-rose-50 disabled:opacity-40"
+                        className="px-2.5 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 disabled:opacity-40 text-[11px] font-extrabold flex items-center gap-1"
                         title="Excluir publicação (inclusive padrão)"
                       >
-                        <Trash2 size={13} />
+                        <Trash2 size={12} /> <span>{deletingId === work.id ? '...' : 'Excluir'}</span>
                       </button>
                     )}
                   </div>

@@ -119,6 +119,44 @@ export async function generateGuidedAssistantReply(
   throw lastError instanceof Error ? lastError : new Error('GEMINI_REPLY_FAILED');
 }
 
+export async function testGeminiKeyQuota(): Promise<{
+  ok: boolean;
+  modelUsed: string;
+  latencyMs: number;
+  errorMessage?: string;
+}> {
+  const start = Date.now();
+  const candidates = ['gemini-3.8-flash', 'gemini-3.5-flash-lite'];
+  let lastErr: unknown;
+
+  for (const model of candidates) {
+    try {
+      const ai = getGenAiClient();
+      await ai.models.generateContent({
+        model,
+        contents: [{ role: 'user', parts: [{ text: 'Responda apenas: OK' }] }],
+        config: {
+          maxOutputTokens: 8,
+        },
+      });
+      return {
+        ok: true,
+        modelUsed: model,
+        latencyMs: Date.now() - start,
+      };
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+
+  return {
+    ok: false,
+    modelUsed: candidates[0],
+    latencyMs: Date.now() - start,
+    errorMessage: lastErr instanceof Error ? lastErr.message : String(lastErr || 'Erro ao validar GEMINI_API_KEY'),
+  };
+}
+
 export async function createEphemeralLiveToken(params: {
   communityTitle: string;
   activeJourney: 'justica' | 'ciencia' | 'saberes';

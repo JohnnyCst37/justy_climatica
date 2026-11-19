@@ -17,10 +17,14 @@ import {
   createEphemeralLiveToken,
   generateGuidedAssistantReply,
   synthesizeNarration,
+  testGeminiKeyQuota,
 } from '../services/geminiService.js';
 import {
   acquireQuotaSlot,
   commitQuotaUsage,
+  getAiQuotaTelemetry,
+  recordAiCallFailure,
+  recordAiCallSuccess,
   releaseQuotaReservation,
   sanitizeAiErrorMessage,
 } from '../services/quotaGuard.js';
@@ -31,8 +35,37 @@ export const apiRouter = Router();
 apiRouter.use(rejectClientSuppliedApiKeys);
 
 apiRouter.get('/health', (_req, res: Response) => {
-  res.json(buildServerHealthReport(isAdminReady()));
+  res.json({
+    ...buildServerHealthReport(isAdminReady()),
+    quotaTelemetry: getAiQuotaTelemetry(),
+  });
 });
+
+apiRouter.post(
+  '/admin/test-gemini-key',
+  requireAuth,
+  async (_req: AuthenticatedRequest, res: Response) => {
+    const result = await testGeminiKeyQuota();
+    if (result.ok) {
+      recordAiCallSuccess();
+      res.json({
+        ...result,
+        health: buildServerHealthReport(isAdminReady()),
+        quotaTelemetry: getAiQuotaTelemetry(),
+      });
+      return;
+    }
+
+    const safe = sanitizeAiErrorMessage(result.errorMessage || 'API_KEY_TEST_FAILED');
+    recordAiCallFailure(safe.status, result.errorMessage || safe.message);
+    res.status(safe.status).json({
+      ...result,
+      error: safe.message,
+      health: buildServerHealthReport(isAdminReady()),
+      quotaTelemetry: getAiQuotaTelemetry(),
+    });
+  }
+);
 
 apiRouter.post(
   '/assistant/step',
@@ -58,10 +91,12 @@ apiRouter.post(
     try {
       const reply = await generateGuidedAssistantReply(parsed.data);
       await commitQuotaUsage(uid, quota.reservationId, 0.012, 0.02);
+      recordAiCallSuccess();
       res.json(reply);
     } catch (error) {
       await releaseQuotaReservation(uid, quota.reservationId, 0.02);
       const safe = sanitizeAiErrorMessage(error);
+      recordAiCallFailure(safe.status, error instanceof Error ? error.message : safe.message);
       res.status(safe.status).json({ error: safe.message });
     }
   }
@@ -91,10 +126,12 @@ apiRouter.post(
     try {
       const tokenPayload = await createEphemeralLiveToken(parsed.data);
       await commitQuotaUsage(uid, quota.reservationId, 0.03, 0.04);
+      recordAiCallSuccess();
       res.json(tokenPayload);
     } catch (error) {
       await releaseQuotaReservation(uid, quota.reservationId, 0.04);
       const safe = sanitizeAiErrorMessage(error);
+      recordAiCallFailure(safe.status, error instanceof Error ? error.message : safe.message);
       res.status(safe.status).json({ error: safe.message });
     }
   }
@@ -123,10 +160,12 @@ apiRouter.post(
     try {
       const payload = await synthesizeNarration(parsed.data);
       await commitQuotaUsage(uid, quota.reservationId, 0.01, 0.015);
+      recordAiCallSuccess();
       res.json(payload);
     } catch (error) {
       await releaseQuotaReservation(uid, quota.reservationId, 0.015);
       const safe = sanitizeAiErrorMessage(error);
+      recordAiCallFailure(safe.status, error instanceof Error ? error.message : safe.message);
       res.status(safe.status).json({ error: safe.message });
     }
   }

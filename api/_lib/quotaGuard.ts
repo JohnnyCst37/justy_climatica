@@ -208,6 +208,76 @@ export async function releaseQuotaReservation(
     .catch(() => undefined);
 }
 
+export type AiQuotaHealthStatus = 'healthy' | 'rate_limited' | 'quota_exhausted' | 'key_error';
+
+export interface AiQuotaTelemetry {
+  status: AiQuotaHealthStatus;
+  successCount: number;
+  rateLimit429Count: number;
+  keyErrorCount: number;
+  poolSpentBrl: number;
+  poolLimitBrl: number;
+  lastErrorAt: number | null;
+  lastErrorMessage: string | null;
+  lastSuccessAt: number | null;
+}
+
+const aiTelemetry: AiQuotaTelemetry = {
+  status: 'healthy',
+  successCount: 0,
+  rateLimit429Count: 0,
+  keyErrorCount: 0,
+  poolSpentBrl: 0,
+  poolLimitBrl: DEFAULT_GLOBAL_POOL_CAP_BRL,
+  lastErrorAt: null,
+  lastErrorMessage: null,
+  lastSuccessAt: null,
+};
+
+export function recordAiCallSuccess(): void {
+  aiTelemetry.successCount += 1;
+  aiTelemetry.status = 'healthy';
+  aiTelemetry.lastSuccessAt = Date.now();
+  aiTelemetry.poolSpentBrl = memoryEngine.snapshot().committedBrl;
+}
+
+export function recordAiCallFailure(httpStatus: number, rawMessage: string): void {
+  const lower = rawMessage.toLowerCase();
+  aiTelemetry.lastErrorAt = Date.now();
+  aiTelemetry.lastErrorMessage = rawMessage.slice(0, 180);
+  aiTelemetry.poolSpentBrl = memoryEngine.snapshot().committedBrl;
+
+  if (
+    httpStatus === 503 ||
+    lower.includes('api_key') ||
+    lower.includes('permission_denied') ||
+    lower.includes('billing') ||
+    lower.includes('unauthenticated')
+  ) {
+    aiTelemetry.keyErrorCount += 1;
+    aiTelemetry.status = 'key_error';
+    return;
+  }
+
+  if (httpStatus === 429 || lower.includes('429') || lower.includes('resource_exhausted') || lower.includes('quota')) {
+    aiTelemetry.rateLimit429Count += 1;
+    const isHardExhausted =
+      lower.includes('exceeded') ||
+      lower.includes('billing') ||
+      lower.includes('daily') ||
+      lower.includes('pool_cap') ||
+      aiTelemetry.rateLimit429Count >= 3;
+    aiTelemetry.status = isHardExhausted ? 'quota_exhausted' : 'rate_limited';
+  }
+}
+
+export function getAiQuotaTelemetry(): AiQuotaTelemetry {
+  return {
+    ...aiTelemetry,
+    poolSpentBrl: Math.max(aiTelemetry.poolSpentBrl, memoryEngine.snapshot().committedBrl),
+  };
+}
+
 export function sanitizeAiErrorMessage(error: unknown): { status: number; message: string } {
   const raw = error instanceof Error ? error.message : String(error || '');
   const lower = raw.toLowerCase();

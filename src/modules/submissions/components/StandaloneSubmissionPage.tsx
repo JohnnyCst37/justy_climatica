@@ -16,6 +16,7 @@ import {
 } from '../../auth/services/accessControlService';
 import { StaffEmailManagerModal } from '../../auth/components/StaffEmailManagerModal';
 import { RolePasscodesModal } from '../../auth/components/RolePasscodesModal';
+import { SuperAdminQuotaBanner } from '../../auth/components/SuperAdminQuotaBanner';
 import {
   endPresenceSession,
   heartbeatPresenceSession,
@@ -219,6 +220,10 @@ export const StandaloneSubmissionPage: React.FC = () => {
         </div>
       ) : (
         <main className="max-w-6xl mx-auto p-4 sm:p-8 space-y-6">
+          <SuperAdminQuotaBanner
+            isSuperAdmin={user?.role === 'super_admin'}
+            sessionToken={user?.sessionToken}
+          />
           <section className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-2xs">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
               <div>

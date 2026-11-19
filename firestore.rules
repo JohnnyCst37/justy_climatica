@@ -73,6 +73,11 @@ service cloud.firestore {
       allow read, write: if isSignedIn();
     }
 
+    // Alertas operacionais em tempo real (ex: cota e saúde da chave Gemini para Super Admin)
+    match /system_alerts/{docId} {
+      allow read, write: if isSignedIn();
+    }
+
     // Perfil LGPD pseudonimizado (apenas apelido, turma e papel — sem PII obrigatória)
     match /users/{userId} {
       allow read, write: if isOwner(userId);

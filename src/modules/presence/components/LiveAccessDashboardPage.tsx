@@ -12,6 +12,8 @@ import {
 import type { PresenceSessionRecord, VisitorCategory } from '../../../shared/types/domain';
 import { BioPatrimonioLogo } from '../../../shared/components/Icons';
 import { SCHOOL_CLASS_OPTIONS } from '../../auth/services/accessControlService';
+import { useAuthSession } from '../../auth/hooks/useAuthSession';
+import { SuperAdminQuotaBanner } from '../../auth/components/SuperAdminQuotaBanner';
 import {
   VISITOR_CATEGORY_LABELS,
   formatLoggedDuration,
@@ -32,6 +34,7 @@ const CATEGORY_FILTER_OPTIONS: Array<{ key: 'todos' | 'online' | VisitorCategory
 ];
 
 export const LiveAccessDashboardPage: React.FC = () => {
+  const { user } = useAuthSession();
   const [sessions, setSessions] = useState<PresenceSessionRecord[]>([]);
   const [now, setNow] = useState<number>(() => Date.now());
   const [categoryFilter, setCategoryFilter] = useState<'todos' | 'online' | VisitorCategory>('todos');
@@ -126,6 +129,10 @@ export const LiveAccessDashboardPage: React.FC = () => {
       </header>
 
       <main className="max-w-6xl mx-auto p-4 sm:p-8 space-y-5">
+        <SuperAdminQuotaBanner
+          isSuperAdmin={user?.role === 'super_admin'}
+          sessionToken={user?.sessionToken}
+        />
         <GestoraRadarBanner sessions={sessions} now={now} />
 
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">

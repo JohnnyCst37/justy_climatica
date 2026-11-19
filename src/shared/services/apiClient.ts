@@ -1,4 +1,5 @@
 import { getFirebaseAuthClient } from '../config/firebaseClient';
+import { reportClientAiQuotaIncident } from '../../modules/auth/services/aiQuotaAlertService';
 
 async function buildAuthHeaders(classroomSessionToken?: string): Promise<Record<string, string>> {
   const headers: Record<string, string> = {
@@ -55,6 +56,13 @@ export async function postApiJson<TRequest, TResponse>(
         if (retryable && attempt + 1 < maxAttempts) {
           await new Promise((r) => window.setTimeout(r, 1400 * (attempt + 1)));
           continue;
+        }
+        if (response.status === 429 || response.status === 503) {
+          void reportClientAiQuotaIncident({
+            path,
+            status: response.status,
+            message: data.error || `HTTP ${response.status}`,
+          });
         }
         throw new Error(data.error || `Falha na requisição (${response.status}).`);
       }
