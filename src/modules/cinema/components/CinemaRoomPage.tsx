@@ -35,9 +35,13 @@ export const CinemaRoomPage: React.FC = () => {
   const [selectedId, setSelectedId] = useState<string>('');
   const [createOpen, setCreateOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const { speakCinema, stopCinemaVoice, isSpeaking, isLoadingVoice } = useCinemaVoice(
-    user?.sessionToken
-  );
+  const {
+    speakCinema,
+    stopCinemaVoice,
+    prewarmCinemaQuestions,
+    isSpeaking,
+    isLoadingVoice,
+  } = useCinemaVoice(user?.sessionToken);
 
   const canManage = canManageCinemaSessions(user);
   const isStaff = isStaffRole(user?.role);
@@ -175,6 +179,7 @@ export const CinemaRoomPage: React.FC = () => {
             isLoadingVoice={isLoadingVoice}
             onSpeak={speakCinema}
             onStopVoice={stopCinemaVoice}
+            onPrewarmQuestions={prewarmCinemaQuestions}
             onUpdateState={(patch) => updateCinemaSessionState(activeSession.id, patch)}
           />
         )}

@@ -17,7 +17,7 @@ interface RateBucket {
 
 const rateBuckets = new Map<string, RateBucket>();
 const WINDOW_MS = 60_000;
-const MAX_REQUESTS_PER_WINDOW = 30;
+const MAX_REQUESTS_PER_WINDOW = 90;
 
 export function rejectClientSuppliedApiKeys(req: Request, res: Response, next: NextFunction): void {
   const body = (req.body || {}) as Record<string, unknown>;

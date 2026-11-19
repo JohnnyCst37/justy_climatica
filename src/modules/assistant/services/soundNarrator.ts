@@ -59,7 +59,25 @@ export function buildContextualGreeting(
 const MOBILE_UNLOCK_SILENT_WAV =
   'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
 
+const unlockedAudioElements = new WeakSet<HTMLAudioElement>();
+const narrationUrlCache = new Map<string, string>();
+
+export function getCachedNarrationUrl(text: string, voice = 'Aoede'): string | undefined {
+  return narrationUrlCache.get(`${voice}:${text.trim().toLowerCase()}`);
+}
+
+export function setCachedNarrationUrl(text: string, url: string, voice = 'Aoede'): void {
+  if (!url) return;
+  if (narrationUrlCache.size >= 40) {
+    const oldestKey = narrationUrlCache.keys().next().value;
+    if (oldestKey) narrationUrlCache.delete(oldestKey);
+  }
+  narrationUrlCache.set(`${voice}:${text.trim().toLowerCase()}`, url);
+}
+
 export function unlockMobileAudioElement(audioEl: HTMLAudioElement): void {
+  if (unlockedAudioElements.has(audioEl)) return;
+  unlockedAudioElements.add(audioEl);
   try {
     audioEl.src = MOBILE_UNLOCK_SILENT_WAV;
     const playPromise = audioEl.play();
@@ -96,6 +114,8 @@ export function waitAudioReady(audioEl: HTMLAudioElement, timeoutMs = 8000): Pro
 
 export function stopAllAudio(audioEl: HTMLAudioElement | null): void {
   if (audioEl) {
+    audioEl.onended = null;
+    audioEl.onerror = null;
     audioEl.pause();
     audioEl.currentTime = 0;
   }

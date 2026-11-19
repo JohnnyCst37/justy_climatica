@@ -22,6 +22,7 @@ interface CinemaStagePlayerProps {
   isLoadingVoice: boolean;
   onSpeak: (text: string, slideId: string, onComplete?: () => void) => Promise<void>;
   onStopVoice: () => void;
+  onPrewarmQuestions?: (texts: string[]) => void;
   onUpdateState: (
     patch: Partial<Pick<CinemaSessionRecord, 'status' | 'activeVideoIndex'>>
   ) => Promise<void>;
@@ -35,6 +36,7 @@ export const CinemaStagePlayer: React.FC<CinemaStagePlayerProps> = ({
   isLoadingVoice,
   onSpeak,
   onStopVoice,
+  onPrewarmQuestions,
   onUpdateState,
 }) => {
   const [quizIdx, setQuizIdx] = useState(0);
@@ -47,7 +49,14 @@ export const CinemaStagePlayer: React.FC<CinemaStagePlayerProps> = ({
     setPickedOpt(null);
     setScore(0);
     setOpeningPlaying(false);
-  }, [session.id]);
+    if (onPrewarmQuestions && session.quizQuestions.length > 0) {
+      onPrewarmQuestions(
+        session.quizQuestions.map((q, i) =>
+          buildCinemaQuizQuestionSpeech(q, i, session.quizQuestions.length)
+        )
+      );
+    }
+  }, [session.id, session.quizQuestions, onPrewarmQuestions]);
 
   const videos = session.videos;
   const activeVideo = videos[session.activeVideoIndex] || videos[0];

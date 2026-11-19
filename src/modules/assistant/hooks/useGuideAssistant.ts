@@ -152,9 +152,9 @@ export function useGuideAssistant(params: {
 
       if (!audioRef.current) {
         audioRef.current = new Audio();
+        audioRef.current.preload = 'auto';
+        unlockMobileAudioElement(audioRef.current);
       }
-      audioRef.current.preload = 'auto';
-      unlockMobileAudioElement(audioRef.current);
 
       try {
         const url = await requestNarrationAudio({
@@ -165,7 +165,6 @@ export function useGuideAssistant(params: {
         });
 
         if (seq !== speechSeqRef.current) return;
-
         stopAllAudio(audioRef.current);
         const player = audioRef.current || new Audio();
         audioRef.current = player;
@@ -183,7 +182,6 @@ export function useGuideAssistant(params: {
         player.load();
         await waitAudioReady(player, 8000);
         if (seq !== speechSeqRef.current) return;
-
         setIsAudioLoading(false);
         await player.play();
       } catch {

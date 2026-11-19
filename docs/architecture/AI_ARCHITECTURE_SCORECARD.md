@@ -1,7 +1,7 @@
 # 🧠 Scorecard Arquitetural de IA, Coesão & Escalabilidade (justy_climatica)
 
 > **Gerado por:** JF Architecture Sentinel v2.0 (Determinístico · Custo R$ 0,00 de Tokens)  
-> **Data:** 18/11/2026, 21:59:19  
+> **Data:** 18/11/2026, 22:13:13  
 > **Stack Detectada:** Vite (^6.2.0) · React (^19.2.4) · Express (^4.21.2) · Firebase (^13.3.0) · @google/genai (^3.1.0)
 
 ---
@@ -31,14 +31,14 @@
 
 - **Acima de 250 SLOC:** 25 | **Acima de 400 SLOC:** 0
 - **Mistura `M1 (JSX+DB)`:** 0 | **Mistura `M2 (JSX+AI)`:** 0 | **God Mixing `M3 (>=3 camadas)`:** 0
-- **Acúmulo de Hooks (`>= 8`):** 7
+- **Acúmulo de Hooks (`>= 8`):** 8
 - **Duplicação SSOT (`M5`):** Nenhuma detectada
 - **Status da Catraca (Ratchet):** 🟢 Aprovada (zero regressões)
 
 | Arquivo | Papel | SLOC | Hooks (State/Effect) | Misturas |
 |---|---|---:|:---:|:---|
 | `src/modules/auth/services/accessControlService.ts` | SERVICE_API | **376** (teto: 420) | 0 (0S/0E) | M4 |
-| `src/modules/cinema/components/CinemaStagePlayer.tsx` | UI_COMPONENT | **362** (teto: 380) | 4 (3S/1E) | — |
+| `src/modules/cinema/components/CinemaStagePlayer.tsx` | UI_COMPONENT | **371** (teto: 380) | 4 (3S/1E) | — |
 | `src/modules/submissions/services/worksService.ts` | SERVICE_API | **362** (teto: 420) | 0 (0S/0E) | — |
 | `src/App.tsx` | UI_COMPONENT | **354** (teto: 380) | 17 (5S/4E) | M4 |
 | `src/modules/journeys/components/HeroMediaBanner.tsx` | UI_COMPONENT | **351** (teto: 380) | 2 (1S/1E) | — |

@@ -37,10 +37,12 @@ export async function postApiJson<TRequest, TResponse>(
 ): Promise<TResponse> {
   const headers = await buildAuthHeaders(classroomSessionToken);
   const body = JSON.stringify(payload);
-  const timeoutMs = path.includes('narrar-historia') ? 28_000 : 20_000;
+  const isTts = path.includes('narrar-historia');
+  const timeoutMs = isTts ? 28_000 : 20_000;
+  const maxAttempts = isTts ? 3 : 2;
   let lastError: Error | null = null;
 
-  for (let attempt = 0; attempt < 2; attempt += 1) {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     try {
       const response = await fetchWithTimeout(
         path,
@@ -49,8 +51,9 @@ export async function postApiJson<TRequest, TResponse>(
       );
       const data = (await response.json().catch(() => ({}))) as TResponse & { error?: string };
       if (!response.ok) {
-        if (response.status >= 500 && attempt === 0) {
-          await new Promise((r) => window.setTimeout(r, 1200));
+        const retryable = response.status === 429 || response.status >= 500;
+        if (retryable && attempt + 1 < maxAttempts) {
+          await new Promise((r) => window.setTimeout(r, 1400 * (attempt + 1)));
           continue;
         }
         throw new Error(data.error || `Falha na requisição (${response.status}).`);
@@ -58,8 +61,8 @@ export async function postApiJson<TRequest, TResponse>(
       return data;
     } catch (err) {
       lastError = err instanceof Error ? err : new Error('Erro de rede.');
-      if (attempt === 0) {
-        await new Promise((r) => window.setTimeout(r, 1200));
+      if (attempt + 1 < maxAttempts) {
+        await new Promise((r) => window.setTimeout(r, 1400 * (attempt + 1)));
         continue;
       }
     }

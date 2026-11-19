@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { requestNarrationAudio } from '../../assistant/services/assistantApi';
 import {
+  getCachedNarrationUrl,
   playBrowserSpeech,
   stopAllAudio,
   unlockMobileAudioElement,
@@ -12,6 +13,7 @@ export function useCinemaVoice(sessionToken?: string) {
   const [isLoadingVoice, setIsLoadingVoice] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const seqRef = useRef(0);
+  const prewarmRunRef = useRef(0);
 
   const stopCinemaVoice = useCallback(() => {
     seqRef.current += 1;
@@ -20,20 +22,49 @@ export function useCinemaVoice(sessionToken?: string) {
     setIsLoadingVoice(false);
   }, []);
 
-  useEffect(() => () => stopCinemaVoice(), [stopCinemaVoice]);
+  useEffect(() => {
+    return () => {
+      prewarmRunRef.current += 1;
+      stopCinemaVoice();
+    };
+  }, [stopCinemaVoice]);
+
+  const prewarmCinemaQuestions = useCallback(
+    (texts: string[]) => {
+      const runId = ++prewarmRunRef.current;
+      void (async () => {
+        for (let i = 0; i < texts.length; i += 1) {
+          if (runId !== prewarmRunRef.current) return;
+          const t = texts[i]?.trim();
+          if (!t || getCachedNarrationUrl(t, 'Aoede')) continue;
+          try {
+            await requestNarrationAudio({
+              texto: t,
+              slideId: `prewarm-${i}`,
+              voz: 'Aoede',
+              sessionToken,
+            });
+          } catch {
+            // prewarm silently skips transient errors
+          }
+          await new Promise((r) => window.setTimeout(r, 2500));
+        }
+      })();
+    },
+    [sessionToken]
+  );
 
   const speakCinema = useCallback(
     async (text: string, slideId: string, onComplete?: () => void) => {
       const seq = ++seqRef.current;
       stopAllAudio(audioRef.current);
-      setIsLoadingVoice(true);
       setIsSpeaking(true);
 
       if (!audioRef.current) {
         audioRef.current = new Audio();
+        audioRef.current.preload = 'auto';
+        unlockMobileAudioElement(audioRef.current);
       }
-      audioRef.current.preload = 'auto';
-      unlockMobileAudioElement(audioRef.current);
 
       const finish = () => {
         if (seq !== seqRef.current) return;
@@ -49,12 +80,16 @@ export function useCinemaVoice(sessionToken?: string) {
       };
 
       try {
-        const url = await requestNarrationAudio({
-          texto: text,
-          slideId,
-          voz: 'Aoede',
-          sessionToken,
-        });
+        const cached = getCachedNarrationUrl(text, 'Aoede');
+        if (!cached) setIsLoadingVoice(true);
+        const url =
+          cached ||
+          (await requestNarrationAudio({
+            texto: text,
+            slideId,
+            voz: 'Aoede',
+            sessionToken,
+          }));
 
         if (seq !== seqRef.current) return;
         const audio = audioRef.current;
@@ -63,9 +98,11 @@ export function useCinemaVoice(sessionToken?: string) {
           return;
         }
 
+        stopAllAudio(audio);
         audio.src = url;
         audio.onended = finish;
         audio.onerror = runFallback;
+        audio.load();
         await waitAudioReady(audio, 8000);
         if (seq !== seqRef.current) return;
         setIsLoadingVoice(false);
@@ -77,5 +114,5 @@ export function useCinemaVoice(sessionToken?: string) {
     [sessionToken]
   );
 
-  return { speakCinema, stopCinemaVoice, isSpeaking, isLoadingVoice };
+  return { speakCinema, stopCinemaVoice, prewarmCinemaQuestions, isSpeaking, isLoadingVoice };
 }

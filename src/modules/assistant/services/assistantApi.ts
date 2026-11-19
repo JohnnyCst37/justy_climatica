@@ -1,4 +1,8 @@
 import { postApiJson } from '../../../shared/services/apiClient';
+import {
+  getCachedNarrationUrl,
+  setCachedNarrationUrl,
+} from './soundNarrator';
 import type {
   AssistantReply,
   CommunityNode,
@@ -57,14 +61,19 @@ export async function requestNarrationAudio(params: {
   voz?: 'Aoede' | 'Kore' | 'Puck' | 'Charon' | 'Fenrir' | 'Zephyr';
   sessionToken?: string;
 }): Promise<string> {
+  const voice = params.voz || 'Aoede';
+  const cached = getCachedNarrationUrl(params.texto, voice);
+  if (cached) return cached;
+
   const res = await postApiJson<
     { texto: string; slideId: string; voz: 'Aoede' | 'Kore' | 'Puck' | 'Charon' | 'Fenrir' | 'Zephyr' },
     { audioUrl: string }
   >(
     '/api/narrar-historia',
-    { texto: params.texto, slideId: params.slideId, voz: params.voz || 'Aoede' },
+    { texto: params.texto, slideId: params.slideId, voz: voice },
     params.sessionToken
   );
+  if (res.audioUrl) setCachedNarrationUrl(params.texto, res.audioUrl, voice);
   return res.audioUrl;
 }
 

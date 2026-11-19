@@ -25,6 +25,21 @@ export type AssistantStepPayload = {
 export type AssistantStructuredResponse = z.infer<typeof assistantStructuredResponseSchema>;
 
 const ttsAudioCache = new Map<string, { audioUrl: string }>();
+const inFlightTtsRequests = new Map<string, Promise<{ audioUrl: string }>>();
+let ttsSerialTail: Promise<void> = Promise.resolve();
+
+function delayMs(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function enqueueTtsSerial<T>(task: () => Promise<T>): Promise<T> {
+  const run = ttsSerialTail.then(task, task);
+  ttsSerialTail = run.then(
+    () => delayMs(280),
+    () => delayMs(280)
+  );
+  return run;
+}
 
 function getGenAiClient(apiVersion?: string): GoogleGenAI {
   const apiKey = resolveServerGeminiKey();
@@ -176,38 +191,68 @@ export async function synthesizeNarration(params: {
   voz?: 'Aoede' | 'Kore' | 'Puck' | 'Charon' | 'Fenrir' | 'Zephyr';
 }): Promise<{ audioUrl: string }> {
   const chosenVoice = params.voz || 'Aoede';
-  const cacheKey = `${params.slideId}:${chosenVoice}:${params.texto.slice(0, 140)}`;
+  const normalizedText = params.texto.trim().toLowerCase();
+  const cacheKey = `${chosenVoice}:${normalizedText}`;
   const cached = ttsAudioCache.get(cacheKey);
   if (cached) return cached;
 
-  const ai = getGenAiClient('v1alpha');
-  const response = await ai.models.generateContent({
-    model: 'gemini-3.8-flash-tts',
-    contents: [
-      {
-        role: 'user',
-        parts: [{ text: params.texto }],
-      },
-    ],
-    config: {
-      responseModalities: ['AUDIO'],
-      speechConfig: {
-        voiceConfig: {
-          prebuiltVoiceConfig: { voiceName: chosenVoice },
-        },
-      },
-    },
+  const existing = inFlightTtsRequests.get(cacheKey);
+  if (existing) return existing;
+
+  const job = enqueueTtsSerial(async () => {
+    const again = ttsAudioCache.get(cacheKey);
+    if (again) return again;
+
+    const retryDelays = [1400, 2600];
+    let lastErr: unknown;
+
+    for (let attempt = 0; attempt <= retryDelays.length; attempt += 1) {
+      try {
+        const ai = getGenAiClient('v1alpha');
+        const response = await ai.models.generateContent({
+          model: 'gemini-3.8-flash-tts',
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: params.texto }],
+            },
+          ],
+          config: {
+            responseModalities: ['AUDIO'],
+            speechConfig: {
+              voiceConfig: {
+                prebuiltVoiceConfig: { voiceName: chosenVoice },
+              },
+            },
+          },
+        });
+
+        const part = response.candidates?.[0]?.content?.parts?.[0];
+        const base64Audio = part?.inlineData?.data;
+        const mimeType = part?.inlineData?.mimeType || 'audio/wav';
+
+        if (!base64Audio) {
+          throw new Error('TTS_GENERATION_EMPTY');
+        }
+
+        const payload = { audioUrl: wrapPcmAsWavDataUrl(base64Audio, mimeType) };
+        ttsAudioCache.set(cacheKey, payload);
+        return payload;
+      } catch (err) {
+        lastErr = err;
+        if (attempt < retryDelays.length) {
+          await delayMs(retryDelays[attempt]);
+        }
+      }
+    }
+
+    throw lastErr instanceof Error ? lastErr : new Error('TTS_GENERATION_FAILED');
   });
 
-  const part = response.candidates?.[0]?.content?.parts?.[0];
-  const base64Audio = part?.inlineData?.data;
-  const mimeType = part?.inlineData?.mimeType || 'audio/wav';
-
-  if (!base64Audio) {
-    throw new Error('TTS_GENERATION_EMPTY');
+  inFlightTtsRequests.set(cacheKey, job);
+  try {
+    return await job;
+  } finally {
+    inFlightTtsRequests.delete(cacheKey);
   }
-
-  const payload = { audioUrl: wrapPcmAsWavDataUrl(base64Audio, mimeType) };
-  ttsAudioCache.set(cacheKey, payload);
-  return payload;
 }
