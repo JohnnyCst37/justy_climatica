@@ -38,6 +38,7 @@ export interface AuthorizedEmailEntry {
   status?: 'pending' | 'approved';
   addedByEmail: string;
   createdAt: number;
+  updatedAt?: number;
 }
 
 export interface UserProfile {

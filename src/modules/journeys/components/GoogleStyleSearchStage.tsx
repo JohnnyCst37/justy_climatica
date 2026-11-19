@@ -5,7 +5,6 @@ import {
   Map as MapIcon,
   Mic,
   Search,
-  Send,
   Sparkles,
   Trees,
   Users,
@@ -18,12 +17,14 @@ import type {
   SchoolWork,
   ThemeSessionKey,
 } from '../../../shared/types/domain';
+import { InstitutionalSynergyBar } from '../../../shared/components/InstitutionalSynergyBar';
 import { resolveBiomePalette } from '../../../shared/utils/biomeThemePalettes';
 import { buildAgeAdaptedOverview } from '../../../shared/utils/ageNarrativeAdapter';
 import { getCommunityMediaSlides } from '../../../shared/data/communityMediaCatalog';
 import { MapCanvas } from '../../map/components/MapCanvas';
 import { HeroMediaBanner } from './HeroMediaBanner';
 import { SessionVideosCard } from './SessionVideosCard';
+import { GuideAskBox } from './GuideAskBox';
 import { lyriaEngine } from '../../audio/services/lyriaSoundscapeEngine';
 
 interface GoogleStyleSearchStageProps {
@@ -76,11 +77,9 @@ export const GoogleStyleSearchStage: React.FC<GoogleStyleSearchStageProps> = ({
 }) => {
   const [stageMode, setStageMode] = useState<'map' | 'slides'>('map');
   const [videoChoice, setVideoChoice] = useState<'pending' | 'yes' | 'no'>('pending');
-  const [freeQuery, setFreeQuery] = useState('');
 
   const palette = resolveBiomePalette(activeCommunity, activeTheme);
   const overview = buildAgeAdaptedOverview(activeCommunity, activeTheme, visitorAge);
-  const latestGuideMsg = [...messages].reverse().find((m) => m.sender === 'guide');
 
   // Sincroniza paleta sonora do Lyria ao trocar comunidade ou tema
   useEffect(() => {
@@ -114,13 +113,6 @@ export const GoogleStyleSearchStage: React.FC<GoogleStyleSearchStageProps> = ({
   const handleAcceptVideo = () => {
     setVideoChoice('yes');
     lyriaEngine.setThemeAmbience('buritis');
-  };
-
-  const handleAskSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!freeQuery.trim()) return;
-    onSendQuestion(freeQuery);
-    setFreeQuery('');
   };
 
   return (
@@ -254,30 +246,12 @@ export const GoogleStyleSearchStage: React.FC<GoogleStyleSearchStageProps> = ({
               ))}
             </ul>
 
-            {latestGuideMsg && latestGuideMsg.sender === 'guide' && latestGuideMsg.id.startsWith('g-') && (
-              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-800">
-                <strong className="text-emerald-800 block mb-0.5">Resposta do Guia:</strong>
-                {latestGuideMsg.text}
-              </div>
-            )}
-
-            {/* Barra flutuante estilo "Pergunte o que quiser" */}
-            <form onSubmit={handleAskSubmit} className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-              <input
-                type="text"
-                value={freeQuery}
-                onChange={(e) => setFreeQuery(e.target.value)}
-                placeholder="Pergunte qualquer dúvida sobre este tema para o Guia..."
-                className="flex-1 px-4 py-2.5 min-h-[44px] rounded-2xl border border-slate-300 bg-slate-50/70 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600"
-              />
-              <button
-                type="submit"
-                disabled={loadingReply || !freeQuery.trim()}
-                className="px-4 py-2.5 min-h-[44px] rounded-2xl bg-slate-900 hover:bg-slate-800 disabled:opacity-40 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 shrink-0"
-              >
-                <Send size={14} /> Perguntar
-              </button>
-            </form>
+            <GuideAskBox
+              messages={messages}
+              loadingReply={loadingReply}
+              onSendQuestion={onSendQuestion}
+              onSpeakText={onSpeakText}
+            />
           </div>
 
           {/* Convite do Agente para Vídeos Selecionados + Mensagem de Reconhecimento + Quiz */}
@@ -348,6 +322,10 @@ export const GoogleStyleSearchStage: React.FC<GoogleStyleSearchStageProps> = ({
             </button>
           </div>
         </aside>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-3 sm:px-8 pt-6">
+        <InstitutionalSynergyBar variant="light" />
       </div>
     </div>
   );

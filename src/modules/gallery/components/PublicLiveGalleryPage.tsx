@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import type { LiveCoverageItem } from '../../../shared/types/domain';
 import { BioPatrimonioLogo } from '../../../shared/components/Icons';
+import { InstitutionalSynergyBar } from '../../../shared/components/InstitutionalSynergyBar';
 import { ResolvedVideoPlayer } from '../../../shared/components/ResolvedVideoPlayer';
 import {
   endPresenceSession,
@@ -196,6 +197,8 @@ export const PublicLiveGalleryPage: React.FC = () => {
             ))}
           </div>
         )}
+
+        <InstitutionalSynergyBar variant="light" />
       </main>
 
       {zoomPhoto && (

@@ -14,6 +14,7 @@ import {
 import { LiveVoiceSession } from '../services/liveVoiceClient';
 import {
   buildContextualGreeting,
+  buildLocalCorpusAssistantReply,
   playBrowserSpeech,
   stopAllAudio,
   unlockMobileAudioElement,
@@ -92,8 +93,24 @@ export function useGuideAssistant(params: {
             sources: reply.fontesWeb,
           },
         ]);
-      } catch (err) {
-        setErrorMsg(err instanceof Error ? err.message : 'Guia indisponível no momento.');
+      } catch {
+        const localReply = buildLocalCorpusAssistantReply(
+          params.community,
+          params.activeJourney,
+          text.trim()
+        );
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `g-${Date.now()}`,
+            sender: 'guide',
+            text: localReply.respostaNatural,
+            nextStepHint: localReply.proximoPassoSugerido,
+            suggestedJourney: localReply.jornadaRecomendada,
+            prompts: localReply.perguntasGuiadas,
+            sources: [],
+          },
+        ]);
       } finally {
         setLoadingReply(false);
       }

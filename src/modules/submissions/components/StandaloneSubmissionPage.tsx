@@ -4,6 +4,7 @@ import {
   MapPinPlus, Radio, School, Share2, Shield, Users,
 } from 'lucide-react';
 import { BioPatrimonioLogo } from '../../../shared/components/Icons';
+import { InstitutionalSynergyBar } from '../../../shared/components/InstitutionalSynergyBar';
 import type { AuthorizedEmailRole, CommunityNode } from '../../../shared/types/domain';
 import { useCommunitiesList } from '../../../shared/hooks/useCommunitiesList';
 import { useAuthSession } from '../../auth/hooks/useAuthSession';
@@ -200,17 +201,22 @@ export const StandaloneSubmissionPage: React.FC = () => {
       </header>
 
       {!hasAccess ? (
-        <SubmissionAuthCard
-          user={user}
-          authError={authError}
-          hasAccess={hasAccess}
-          onEnterWithPasscode={enterWithRolePasscode}
-          onEnterWithEmail={enterWithAuthorizedEmail}
-          onEnterWithGoogle={enterWithGoogle}
-          onSubmitAccessRequest={submitAccessRequest}
-          onRefreshApproval={refreshApprovalStatus}
-          onLogout={logout}
-        />
+        <div className="space-y-6 pb-8">
+          <SubmissionAuthCard
+            user={user}
+            authError={authError}
+            hasAccess={hasAccess}
+            onEnterWithPasscode={enterWithRolePasscode}
+            onEnterWithEmail={enterWithAuthorizedEmail}
+            onEnterWithGoogle={enterWithGoogle}
+            onSubmitAccessRequest={submitAccessRequest}
+            onRefreshApproval={refreshApprovalStatus}
+            onLogout={logout}
+          />
+          <div className="max-w-5xl mx-auto px-4">
+            <InstitutionalSynergyBar variant="light" />
+          </div>
+        </div>
       ) : (
         <main className="max-w-6xl mx-auto p-4 sm:p-8 space-y-6">
           <section className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-2xs">
@@ -259,6 +265,7 @@ export const StandaloneSubmissionPage: React.FC = () => {
               )}
             </section>
           </div>
+          <InstitutionalSynergyBar variant="light" />
         </main>
       )}
 

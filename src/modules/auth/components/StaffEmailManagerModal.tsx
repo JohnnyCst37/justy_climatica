@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
+  Camera,
   CheckCircle2,
   Clock,
   ShieldCheck,
@@ -270,52 +271,79 @@ export const StaffEmailManagerModal: React.FC<StaffEmailManagerModalProps> = ({
           <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
             E-mails Já Aprovados ({approvedEntries.length})
           </div>
-          {approvedEntries.map((entry) => (
-            <div
-              key={entry.email}
-              className="flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs"
-            >
-              <div className="min-w-0">
-                <div className="font-bold text-slate-900 truncate flex items-center gap-2">
-                  <span>{entry.name}</span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-900">
-                    {ROLE_LABELS[entry.role]}
-                  </span>
-                  {entry.classGroup && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-900">
-                      {entry.classGroup}
+          {approvedEntries.map((entry) => {
+            const isReporter = entry.role === 'cobertura' || entry.role === 'super_admin';
+            return (
+              <div
+                key={entry.email}
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs"
+              >
+                <div className="min-w-0">
+                  <div className="font-bold text-slate-900 flex items-center gap-1.5 flex-wrap">
+                    <span>{entry.name}</span>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                        entry.role === 'cobertura'
+                          ? 'bg-rose-100 text-rose-900 border border-rose-200'
+                          : 'bg-emerald-100 text-emerald-900'
+                      }`}
+                    >
+                      {ROLE_LABELS[entry.role]}
                     </span>
-                  )}
+                    {entry.classGroup && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-900">
+                        {entry.classGroup}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[11px] text-slate-500 truncate">{entry.email}</div>
                 </div>
-                <div className="text-[11px] text-slate-500 truncate">{entry.email}</div>
-              </div>
 
-              {entry.role !== 'super_admin' && (
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <select
-                    aria-label={`Alterar cargo de ${entry.email}`}
-                    value={entry.role}
-                    onChange={(e) => void handleChangeRole(entry.email, e.target.value as AuthorizedEmailRole)}
-                    className="px-2 py-1 rounded-lg border border-slate-300 bg-slate-50 text-[11px] font-bold text-slate-800 max-w-[165px]"
-                  >
-                    {availableRoles.map((r) => (
-                      <option key={r} value={r}>
-                        {ROLE_LABELS[r]}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    onClick={() => void handleRemove(entry.email)}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-700 hover:bg-rose-50"
-                    title="Revogar acesso"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
+                {entry.role !== 'super_admin' && (
+                  <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap shrink-0">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void handleChangeRole(
+                          entry.email,
+                          entry.role === 'cobertura' ? 'professor' : 'cobertura'
+                        )
+                      }
+                      className={`px-2.5 py-1 rounded-lg border text-[11px] font-extrabold flex items-center gap-1 transition ${
+                        isReporter
+                          ? 'bg-rose-600 border-rose-600 text-white hover:bg-rose-500'
+                          : 'bg-amber-50 border-amber-300 text-amber-950 hover:bg-amber-100'
+                      }`}
+                      title="Professor(a) + Repórter Live têm acesso a /enviar e /cobertura"
+                    >
+                      <Camera size={12} />
+                      <span>{entry.role === 'cobertura' ? 'Prof + Repórter Ativo ✓' : '+ Repórter Live'}</span>
+                    </button>
+                    <select
+                      aria-label={`Alterar cargo de ${entry.email}`}
+                      value={entry.role}
+                      onChange={(e) => void handleChangeRole(entry.email, e.target.value as AuthorizedEmailRole)}
+                      className="px-2 py-1 rounded-lg border border-slate-300 bg-slate-50 text-[11px] font-bold text-slate-800 max-w-[165px]"
+                    >
+                      {availableRoles.map((r) => (
+                        <option key={r} value={r}>
+                          {ROLE_LABELS[r]}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => void handleRemove(entry.email)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-700 hover:bg-rose-50"
+                      title="Revogar acesso"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

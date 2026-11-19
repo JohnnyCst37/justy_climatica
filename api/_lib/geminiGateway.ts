@@ -76,23 +76,32 @@ export async function generateGuidedAssistantReply(
 ): Promise<AssistantStructuredResponse> {
   const ai = getGenAiClient();
   const safeQuestion = wrapInUntrustedDataCage('pergunta_usuario', payload.userMessage);
+  const promptText = `${buildJourneySystemPrompt(payload)}\n\n${safeQuestion}`;
 
-  const response = await ai.models.generateContent({
-    model: 'gemini-3.8-flash',
-    contents: [
-      {
-        role: 'user',
-        parts: [{ text: `${buildJourneySystemPrompt(payload)}\n\n${safeQuestion}` }],
-      },
-    ],
-    config: {
-      thinkingConfig: { thinkingLevel: ThinkingLevel.MEDIUM },
-      responseMimeType: 'application/json',
-    },
-  });
+  const modelsToTry: Array<{ model: string; thinking?: ThinkingLevel }> = [
+    { model: 'gemini-3.8-flash', thinking: ThinkingLevel.MEDIUM },
+    { model: 'gemini-3.5-flash-lite' },
+  ];
 
-  const rawText = response.text || '{}';
-  return assistantStructuredResponseSchema.parse(JSON.parse(rawText));
+  let lastError: unknown;
+  for (const candidate of modelsToTry) {
+    try {
+      const response = await ai.models.generateContent({
+        model: candidate.model,
+        contents: [{ role: 'user', parts: [{ text: promptText }] }],
+        config: {
+          ...(candidate.thinking ? { thinkingConfig: { thinkingLevel: candidate.thinking } } : {}),
+          responseMimeType: 'application/json',
+        },
+      });
+      const rawText = response.text || '{}';
+      return assistantStructuredResponseSchema.parse(JSON.parse(rawText));
+    } catch (err) {
+      lastError = err;
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error('GEMINI_REPLY_FAILED');
 }
 
 export async function createEphemeralLiveToken(params: {

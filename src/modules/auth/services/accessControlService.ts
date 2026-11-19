@@ -25,7 +25,7 @@ export const ROLE_LABELS: Record<AuthorizedEmailRole, string> = {
   diretor: 'Diretor(a)',
   coordenador: 'Coordenador(a)',
   professor: 'Professor(a)',
-  cobertura: 'Repórter · Cobertura (/cobertura)',
+  cobertura: 'Professor(a) + Repórter Live (/enviar e /cobertura)',
   cinema: 'Monitor(a) · Sala de Cinema (/cinema)',
   lider: 'Aluno(a) Líder',
 };
@@ -147,6 +147,7 @@ function toCleanFirestoreDoc(entry: AuthorizedEmailEntry): Record<string, string
     status: entry.status || 'approved',
     addedByEmail: entry.addedByEmail,
     createdAt: entry.createdAt,
+    updatedAt: entry.updatedAt ?? entry.createdAt,
   };
   return docData;
 }
@@ -179,7 +180,11 @@ function mergeEntries(groups: AuthorizedEmailEntry[][]): AuthorizedEmailEntry[] 
   for (const group of groups) {
     for (const item of group) {
       const clean = normalizeEmail(item.email);
-      if (clean) {
+      if (!clean) continue;
+      const prev = map.get(clean);
+      const itemStamp = item.updatedAt ?? item.createdAt;
+      const prevStamp = prev ? (prev.updatedAt ?? prev.createdAt) : -1;
+      if (!prev || itemStamp >= prevStamp) {
         map.set(clean, { ...item, email: clean });
       }
     }
@@ -192,7 +197,8 @@ export function isStaffRole(role?: UserRole): boolean {
     role === 'super_admin' ||
     role === 'diretor' ||
     role === 'coordenador' ||
-    role === 'professor'
+    role === 'professor' ||
+    role === 'cobertura'
   );
 }
 
@@ -233,16 +239,16 @@ export async function listAuthorizedEmails(): Promise<AuthorizedEmailEntry[]> {
   const db = getFirestoreClient();
 
   if (!db) {
-    return mergeEntries([local, seeds]);
+    return mergeEntries([seeds, local]);
   }
 
   try {
     await ensureFirebaseSession();
     const snap = await getDocs(collection(db, 'authorized_emails'));
     const remote = snap.docs.map((d) => d.data() as AuthorizedEmailEntry);
-    return mergeEntries([local, remote, seeds]);
+    return mergeEntries([seeds, local, remote]);
   } catch {
-    return mergeEntries([local, seeds]);
+    return mergeEntries([seeds, local]);
   }
 }
 
@@ -253,6 +259,7 @@ export async function findAuthorizedEmail(email: string): Promise<AuthorizedEmai
   const seedMatch = getSeedSuperAdminEntries().find((s) => s.email === clean);
   if (seedMatch) return seedMatch;
 
+  const localMatch = loadLocalEntries().find((l) => normalizeEmail(l.email) === clean);
   const db = getFirestoreClient();
   if (db) {
     try {
@@ -260,6 +267,11 @@ export async function findAuthorizedEmail(email: string): Promise<AuthorizedEmai
       const snap = await getDoc(doc(db, 'authorized_emails', clean));
       if (snap.exists()) {
         const remote = { ...(snap.data() as AuthorizedEmailEntry), email: clean };
+        const localStamp = localMatch ? (localMatch.updatedAt ?? localMatch.createdAt) : -1;
+        const remoteStamp = remote.updatedAt ?? remote.createdAt;
+        if (localMatch && localStamp > remoteStamp) {
+          return { ...localMatch, email: clean };
+        }
         upsertLocalEntry(remote);
         return remote;
       }
@@ -268,7 +280,6 @@ export async function findAuthorizedEmail(email: string): Promise<AuthorizedEmai
     }
   }
 
-  const localMatch = loadLocalEntries().find((l) => normalizeEmail(l.email) === clean);
   if (localMatch) return { ...localMatch, email: clean };
   const preapproved = getPreapprovedSeedStaffEntries().find((s) => s.email === clean);
   return preapproved || null;
@@ -294,6 +305,7 @@ export async function addAuthorizedEmail(
     status: 'approved',
     addedByEmail: normalizeEmail(actorEmail) || 'super_admin',
     createdAt: Date.now(),
+    updatedAt: Date.now(),
   };
 
   upsertLocalEntry(entry);
@@ -325,6 +337,7 @@ export async function updateAuthorizedEmailRole(
     classGroup: existing.classGroup || defaultGroupForAuthorizedRole(resolvedRole),
     status: 'approved',
     addedByEmail: normalizeEmail(actorEmail) || existing.addedByEmail,
+    updatedAt: Date.now(),
   };
   upsertLocalEntry(updated);
   const db = getFirestoreClient();

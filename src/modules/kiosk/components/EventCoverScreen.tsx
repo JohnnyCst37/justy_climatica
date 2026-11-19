@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Clapperboard, LogIn, Maximize, Radio, Sparkles, UserCheck, Volume2 } from 'lucide-react';
 import type { AgeGroupKey, VisitorCategory } from '../../../shared/types/domain';
+import { InstitutionalSynergyBar } from '../../../shared/components/InstitutionalSynergyBar';
 import { SCHOOL_CLASS_OPTIONS } from '../../auth/services/accessControlService';
 import { defaultGroupForCategory } from '../../presence/services/presenceService';
 import { lyriaEngine } from '../../audio/services/lyriaSoundscapeEngine';
@@ -115,7 +116,8 @@ export const EventCoverScreen: React.FC<EventCoverScreenProps> = ({
       <div className="absolute -top-28 -left-28 w-72 sm:w-96 h-72 sm:h-96 rounded-full bg-emerald-500/15 blur-3xl pointer-events-none" />
       <div className="absolute -bottom-32 -right-32 w-80 sm:w-[460px] h-80 sm:h-[460px] rounded-full bg-amber-500/15 blur-3xl pointer-events-none" />
 
-      <div className="relative z-10 max-w-5xl w-full grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-7 items-center">
+      <div className="relative z-10 max-w-5xl w-full space-y-5">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-7 items-center">
         <div className="lg:col-span-7 space-y-4 sm:space-y-5">
           <div className="flex items-center gap-3.5">
             <img
@@ -327,6 +329,9 @@ export const EventCoverScreen: React.FC<EventCoverScreenProps> = ({
             </div>
           </div>
         </form>
+        </div>
+
+        <InstitutionalSynergyBar variant="dark" />
       </div>
     </div>
   );

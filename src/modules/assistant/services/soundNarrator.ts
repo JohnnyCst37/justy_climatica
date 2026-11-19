@@ -1,4 +1,44 @@
-import type { CommunityNode, JourneyKey } from '../../../shared/types/domain';
+import type { AssistantReply, CommunityNode, JourneyKey } from '../../../shared/types/domain';
+
+export function buildLocalCorpusAssistantReply(
+  community: CommunityNode,
+  journey: JourneyKey,
+  question: string
+): AssistantReply {
+  const q = question.toLowerCase();
+  const sp = community.especiesCientificas[0];
+  let answer = '';
+
+  if (q.includes('injust') || q.includes('sofr') || q.includes('causa') || q.includes('quem')) {
+    answer = `Em ${community.titulo} (${community.municipio}), ${community.justicaClimaticaExplicacao.quemSofreImpacto} A raiz do problema está ligada a ${community.justicaClimaticaExplicacao.causaDoProblema} — por isso é injusto: ${community.justicaClimaticaExplicacao.porQueEInjusto}`;
+  } else if (
+    q.includes('especi') ||
+    q.includes('água') ||
+    q.includes('agua') ||
+    q.includes('naturez') ||
+    q.includes('bioma') ||
+    q.includes('proteg')
+  ) {
+    answer = `No bioma ${community.bioma}, ${community.resumoCientifico.diagnosticoEcologico} Espécies como ${sp ? `${sp.nomePopular} (${sp.nomeCientificoLatim})` : 'a fauna e flora locais'} são protegidas junto à unidade ${community.unidadeConservacaoRelacionada.nome}.`;
+  } else if (q.includes('escola') || q.includes('aluno') || q.includes('propost') || q.includes('ajud') || q.includes('fazer')) {
+    const firstAction = community.acoesPropostas[0] || community.resumoCientifico.solucoesComunitarias;
+    answer = `Os alunos da ${community.escola} (${community.serie}) destacam como solução comunitária: ${firstAction} Você pode apoiar divulgando os saberes de ${community.diarioDeBordo.autorVoz} e participando do Quiz!`;
+  } else {
+    answer = `Sobre ${community.titulo} (${community.municipio} · ${community.bioma}): ${community.resumoCientifico.solucoesComunitarias} Além disso, ${community.justicaClimaticaExplicacao.oQueEstaSendoFeito || community.resumoCientifico.conclusaoEstudantil}`;
+  }
+
+  return {
+    respostaNatural: answer,
+    resumoEmUmaFrase: `${community.titulo}: proteção territorial e justiça climática no ${community.bioma}.`,
+    proximoPassoSugerido: 'Ouça esta explicação em voz alta ou explore os vídeos selecionados abaixo.',
+    jornadaRecomendada: journey,
+    perguntasGuiadas: [
+      'Quem sofre primeiro os impactos climáticos aqui?',
+      'Como nossa escola e os alunos propõem soluções?',
+    ],
+    fontesWeb: [],
+  };
+}
 
 export function buildContextualGreeting(
   community: CommunityNode,

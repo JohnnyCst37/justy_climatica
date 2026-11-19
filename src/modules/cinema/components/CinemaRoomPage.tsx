@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, Clapperboard, PlusCircle, Radio, Trash2, Users } from 'lucide-react';
 import type { CinemaSessionRecord } from '../../../shared/types/domain';
 import { BioPatrimonioLogo } from '../../../shared/components/Icons';
+import { InstitutionalSynergyBar } from '../../../shared/components/InstitutionalSynergyBar';
 import { useCommunitiesList } from '../../../shared/hooks/useCommunitiesList';
 import { useAuthSession } from '../../auth/hooks/useAuthSession';
 import { canManageCinemaSessions, isStaffRole } from '../../auth/services/accessControlService';
@@ -177,6 +178,8 @@ export const CinemaRoomPage: React.FC = () => {
             onUpdateState={(patch) => updateCinemaSessionState(activeSession.id, patch)}
           />
         )}
+
+        <InstitutionalSynergyBar variant="dark" />
       </main>
 
       <CreateCinemaSessionModal
