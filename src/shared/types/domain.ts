@@ -15,6 +15,7 @@ export type UserRole =
   | 'student'
   | 'lider'
   | 'professor'
+  | 'cobertura'
   | 'coordenador'
   | 'diretor'
   | 'super_admin';
@@ -24,6 +25,7 @@ export type AuthorizedEmailRole =
   | 'diretor'
   | 'coordenador'
   | 'professor'
+  | 'cobertura'
   | 'lider';
 
 export interface AuthorizedEmailEntry {
@@ -202,8 +204,23 @@ export interface PresenceSessionRecord {
   endedAt?: number;
   activeCommunityTitle?: string;
   activeTheme?: string;
-  area: 'mostra' | 'portal_envio';
+  area: 'mostra' | 'portal_envio' | 'galeria_live' | 'estudio_cobertura';
   isOnline: boolean;
+}
+
+export interface LiveCoverageItem {
+  id: string;
+  title: string;
+  caption: string;
+  mediaType: 'photo' | 'video';
+  mediaUrl: string;
+  durationSec?: number;
+  classOrGuest: string;
+  reporterName: string;
+  reporterEmail: string;
+  eventDateLabel: string;
+  eventTimeLabel: string;
+  createdAt: number;
 }
 
 export interface AssistantReply {

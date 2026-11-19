@@ -228,7 +228,13 @@ export const LiveAccessDashboardPage: React.FC = () => {
                       </div>
                       <div className="flex items-center justify-between gap-2 text-[11px] pt-1 border-t border-slate-200/70">
                         <span className="text-slate-600 truncate">
-                          {s.area === 'portal_envio' ? 'Portal /enviar' : `Mostra · ${s.activeCommunityTitle || 'Início'}`}
+                          {s.area === 'portal_envio'
+                            ? 'Portal /enviar'
+                            : s.area === 'galeria_live'
+                            ? 'Galeria Live (/galeria)'
+                            : s.area === 'estudio_cobertura'
+                            ? 'Estúdio Cobertura (/cobertura)'
+                            : `Mostra · ${s.activeCommunityTitle || 'Início'}`}
                         </span>
                         <span className="font-mono font-bold text-emerald-800 shrink-0">
                           <Clock size={11} className="inline mr-1" />
@@ -291,6 +297,10 @@ export const LiveAccessDashboardPage: React.FC = () => {
                         <td className="py-2.5 px-3 text-slate-600">
                           {s.area === 'portal_envio'
                             ? 'Portal /enviar (Gestão e Envios)'
+                            : s.area === 'galeria_live'
+                            ? 'Galeria Live (/galeria)'
+                            : s.area === 'estudio_cobertura'
+                            ? 'Estúdio Cobertura (/cobertura)'
                             : `Mostra · ${s.activeCommunityTitle || 'Início'}${s.activeTheme ? ` (${s.activeTheme})` : ''}`}
                         </td>
                         <td className="py-2.5 px-3 whitespace-nowrap font-mono font-bold text-emerald-800">

@@ -25,6 +25,7 @@ export const ROLE_LABELS: Record<AuthorizedEmailRole, string> = {
   diretor: 'Diretor(a)',
   coordenador: 'Coordenador(a)',
   professor: 'Professor(a)',
+  cobertura: 'Cobertura da Galeria (Live)',
   lider: 'Aluno(a) Líder',
 };
 
@@ -116,6 +117,33 @@ function getSeedSuperAdminEntries(): AuthorizedEmailEntry[] {
   }));
 }
 
+function getPreapprovedSeedStaffEntries(): AuthorizedEmailEntry[] {
+  return [
+    {
+      email: 'kksbarros@gmail.com',
+      name: 'Prof.ª KKS Barros',
+      role: 'professor',
+      classGroup: '9º Ano A, 9º Ano B, 9º Ano C, 9º Ano D',
+      status: 'approved',
+      addedByEmail: 'fernandesjohnnys@gmail.com',
+      createdAt: 1730000001000,
+    },
+  ];
+}
+
+function toCleanFirestoreDoc(entry: AuthorizedEmailEntry): Record<string, string | number> {
+  const docData: Record<string, string | number> = {
+    email: entry.email,
+    name: entry.name,
+    role: entry.role,
+    classGroup: entry.classGroup || (entry.role === 'cobertura' ? 'Cobertura Live' : '9º Ano A, 9º Ano B, 9º Ano C, 9º Ano D'),
+    status: entry.status || 'approved',
+    addedByEmail: entry.addedByEmail,
+    createdAt: entry.createdAt,
+  };
+  return docData;
+}
+
 function loadLocalEntries(): AuthorizedEmailEntry[] {
   try {
     const raw = localStorage.getItem(LOCAL_AUTHORIZED_EMAILS_KEY);
@@ -169,6 +197,14 @@ export function canAccessSubmissionPortal(user: UserProfile | null): boolean {
   );
 }
 
+export function canAccessCoverageStudio(user: UserProfile | null): boolean {
+  return (
+    Boolean(user?.email) &&
+    !user?.pendingApproval &&
+    (user?.role === 'cobertura' || user?.role === 'super_admin')
+  );
+}
+
 async function ensureFirebaseSession(): Promise<void> {
   const auth = getFirebaseAuthClient();
   if (auth && !auth.currentUser) {
@@ -177,7 +213,7 @@ async function ensureFirebaseSession(): Promise<void> {
 }
 
 export async function listAuthorizedEmails(): Promise<AuthorizedEmailEntry[]> {
-  const seeds = getSeedSuperAdminEntries();
+  const seeds = [...getSeedSuperAdminEntries(), ...getPreapprovedSeedStaffEntries()];
   const local = loadLocalEntries();
   const db = getFirestoreClient();
 
@@ -218,7 +254,9 @@ export async function findAuthorizedEmail(email: string): Promise<AuthorizedEmai
   }
 
   const localMatch = loadLocalEntries().find((l) => normalizeEmail(l.email) === clean);
-  return localMatch ? { ...localMatch, email: clean } : null;
+  if (localMatch) return { ...localMatch, email: clean };
+  const preapproved = getPreapprovedSeedStaffEntries().find((s) => s.email === clean);
+  return preapproved || null;
 }
 
 export async function addAuthorizedEmail(
@@ -230,11 +268,15 @@ export async function addAuthorizedEmail(
     throw new Error('Informe um e-mail válido.');
   }
 
+  const resolvedClassGroup =
+    input.classGroup?.trim() ||
+    (input.role === 'cobertura' ? 'Cobertura Live' : '9º Ano A, 9º Ano B, 9º Ano C, 9º Ano D');
+
   const entry: AuthorizedEmailEntry = {
     email: cleanEmail,
     name: input.name.trim() || cleanEmail.split('@')[0],
     role: input.role,
-    classGroup: input.classGroup?.trim() || undefined,
+    classGroup: resolvedClassGroup,
     status: 'approved',
     addedByEmail: normalizeEmail(actorEmail) || 'super_admin',
     createdAt: Date.now(),
@@ -243,7 +285,8 @@ export async function addAuthorizedEmail(
   upsertLocalEntry(entry);
   const db = getFirestoreClient();
   if (db) {
-    await setDoc(doc(db, 'authorized_emails', cleanEmail), entry).catch(() => undefined);
+    await ensureFirebaseSession();
+    await setDoc(doc(db, 'authorized_emails', cleanEmail), toCleanFirestoreDoc(entry)).catch(() => undefined);
   }
   return entry;
 }
@@ -266,11 +309,16 @@ export async function requestAccessRegistration(input: {
 
   await ensureFirebaseSession();
 
+  const resolvedRole = input.role === 'super_admin' ? 'professor' : input.role;
+  const resolvedClassGroup =
+    input.classGroup?.trim() ||
+    (resolvedRole === 'cobertura' ? 'Cobertura Live' : '9º Ano A, 9º Ano B, 9º Ano C, 9º Ano D');
+
   const entry: AuthorizedEmailEntry = {
     email: cleanEmail,
     name: input.name.trim() || cleanEmail.split('@')[0],
-    role: input.role === 'super_admin' ? 'professor' : input.role,
-    classGroup: input.classGroup?.trim() || undefined,
+    role: resolvedRole,
+    classGroup: resolvedClassGroup,
     status: 'pending',
     addedByEmail: 'auto-cadastro',
     createdAt: Date.now(),
@@ -279,7 +327,7 @@ export async function requestAccessRegistration(input: {
   upsertLocalEntry(entry);
   const db = getFirestoreClient();
   if (db) {
-    await setDoc(doc(db, 'authorized_emails', cleanEmail), entry).catch(() => undefined);
+    await setDoc(doc(db, 'authorized_emails', cleanEmail), toCleanFirestoreDoc(entry)).catch(() => undefined);
   }
   return entry;
 }
@@ -293,6 +341,7 @@ export async function approveAuthorizedEmail(email: string, approverEmail: strin
 
   const updated: AuthorizedEmailEntry = {
     ...existing,
+    classGroup: existing.classGroup?.trim() || (existing.role === 'cobertura' ? 'Cobertura Live' : '9º Ano A, 9º Ano B, 9º Ano C, 9º Ano D'),
     status: 'approved',
     addedByEmail: normalizeEmail(approverEmail) || 'super_admin',
   };
@@ -300,7 +349,8 @@ export async function approveAuthorizedEmail(email: string, approverEmail: strin
   upsertLocalEntry(updated);
   const db = getFirestoreClient();
   if (db) {
-    await setDoc(doc(db, 'authorized_emails', cleanEmail), updated).catch(() => undefined);
+    await ensureFirebaseSession();
+    await setDoc(doc(db, 'authorized_emails', cleanEmail), toCleanFirestoreDoc(updated)).catch(() => undefined);
   }
 }
 
@@ -313,6 +363,7 @@ export async function removeAuthorizedEmail(email: string): Promise<void> {
   saveLocalEntries(loadLocalEntries().filter((i) => normalizeEmail(i.email) !== cleanEmail));
   const db = getFirestoreClient();
   if (db) {
+    await ensureFirebaseSession();
     await deleteDoc(doc(db, 'authorized_emails', cleanEmail)).catch(() => undefined);
   }
 }

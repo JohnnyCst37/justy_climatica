@@ -98,7 +98,7 @@ export async function startPresenceSession(input: {
   category: VisitorCategory;
   classGroup: string;
   age?: number;
-  area: 'mostra' | 'portal_envio';
+  area: PresenceSessionRecord['area'];
   activeCommunityTitle?: string;
   activeTheme?: string;
 }): Promise<string> {

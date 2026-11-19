@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Activity, ArrowLeft, Check, KeyRound, LogOut,
-  MapPinPlus, School, Share2, Shield, Users,
+  Activity, ArrowLeft, Camera, Check, KeyRound, LogOut,
+  MapPinPlus, Radio, School, Share2, Shield, Users,
 } from 'lucide-react';
 import type { AuthorizedEmailRole, CommunityNode } from '../../../shared/types/domain';
 import { useCommunitiesList } from '../../../shared/hooks/useCommunitiesList';
@@ -123,6 +123,26 @@ export const StandaloneSubmissionPage: React.FC = () => {
           )}
           {hasAccess && isStaff && (
             <>
+              <a
+                href="/galeria"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-2.5 sm:px-3 py-1.5 min-h-[36px] rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-900 text-[11px] sm:text-xs font-extrabold flex items-center gap-1.5"
+              >
+                <Radio size={14} className="text-rose-600 shrink-0" />
+                <span className="sm:hidden">Live</span>
+                <span className="hidden sm:inline">Galeria Live</span>
+              </a>
+              <a
+                href="/cobertura"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-2.5 sm:px-3 py-1.5 min-h-[36px] rounded-xl bg-emerald-800 hover:bg-emerald-700 text-white text-[11px] sm:text-xs font-extrabold flex items-center gap-1.5"
+              >
+                <Camera size={14} className="shrink-0" />
+                <span className="sm:hidden">Gravar</span>
+                <span className="hidden sm:inline">Estúdio /cobertura</span>
+              </a>
               <a
                 href="/acessos"
                 target="_blank"

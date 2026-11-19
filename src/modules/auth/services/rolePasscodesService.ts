@@ -1,7 +1,7 @@
 import type { AuthorizedEmailRole, VisitorCategory } from '../../../shared/types/domain';
 
 export interface RolePasscodeGroup {
-  roleKey: 'diretor' | 'coordenador' | 'professor' | 'dre';
+  roleKey: 'diretor' | 'coordenador' | 'professor' | 'dre' | 'cobertura';
   label: string;
   description: string;
   codes: string[];
@@ -9,10 +9,11 @@ export interface RolePasscodeGroup {
 
 export const MASTER_ADMIN_PASSCODE = 'ADMIN-JOHNNY-2026';
 
-export const ROLE_PASSCODES: Record<'diretor' | 'coordenador' | 'professor' | 'dre', string[]> = {
+export const ROLE_PASSCODES: Record<'diretor' | 'coordenador' | 'professor' | 'dre' | 'cobertura', string[]> = {
   diretor: ['DIR-VILELA-2026'],
   coordenador: ['COORD-01-JRV', 'COORD-02-JRV', 'COORD-03-JRV'],
   dre: ['DRE-MT-2026', 'DRE-SEDUC-19'],
+  cobertura: ['LIVE-01-JRV', 'LIVE-02-JRV'],
   professor: [
     'PROF-01-JRV',
     'PROF-02-JRV',
@@ -47,6 +48,12 @@ export const ROLE_PASSCODE_GROUPS: RolePasscodeGroup[] = [
     label: 'Representantes da DRE (2 senhas)',
     description: 'Para identificação oficial dos técnicos e visitantes da DRE na Jornada',
     codes: ROLE_PASSCODES.dre,
+  },
+  {
+    roleKey: 'cobertura',
+    label: 'Equipe de Cobertura / Galeria Live (2 senhas)',
+    description: 'Libera gravação de vídeos ao vivo, fotos com carimbo do evento e cobertura em /cobertura',
+    codes: ROLE_PASSCODES.cobertura,
   },
   {
     roleKey: 'professor',
@@ -84,6 +91,7 @@ export function resolveStaffRoleByPasscode(inputCode: string): AuthorizedEmailRo
   if (clean === MASTER_ADMIN_PASSCODE) return 'super_admin';
   if (ROLE_PASSCODES.diretor.includes(clean)) return 'diretor';
   if (ROLE_PASSCODES.coordenador.includes(clean)) return 'coordenador';
+  if (ROLE_PASSCODES.cobertura.includes(clean)) return 'cobertura';
   if (ROLE_PASSCODES.professor.includes(clean)) return 'professor';
   return null;
 }

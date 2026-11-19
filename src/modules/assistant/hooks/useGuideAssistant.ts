@@ -16,6 +16,8 @@ import {
   buildContextualGreeting,
   playBrowserSpeech,
   stopAllAudio,
+  unlockMobileAudioElement,
+  waitAudioReady,
 } from '../services/soundNarrator';
 import { lyriaEngine } from '../../audio/services/lyriaSoundscapeEngine';
 
@@ -131,6 +133,12 @@ export function useGuideAssistant(params: {
       setVoiceStatus('speaking');
       stopAllAudio(audioRef.current);
 
+      if (!audioRef.current) {
+        audioRef.current = new Audio();
+      }
+      audioRef.current.preload = 'auto';
+      unlockMobileAudioElement(audioRef.current);
+
       try {
         const url = await requestNarrationAudio({
           texto: text,
@@ -141,20 +149,26 @@ export function useGuideAssistant(params: {
 
         if (seq !== speechSeqRef.current) return;
 
-        setIsAudioLoading(false);
         stopAllAudio(audioRef.current);
-        if (!audioRef.current) audioRef.current = new Audio();
-        audioRef.current.src = url;
-        audioRef.current.onended = () => {
+        const player = audioRef.current || new Audio();
+        audioRef.current = player;
+        player.src = url;
+        player.onended = () => {
           if (seq !== speechSeqRef.current) return;
           setVoiceStatus('idle');
           setIsAudioLoading(false);
         };
-        audioRef.current.onerror = () => {
+        player.onerror = () => {
           if (seq !== speechSeqRef.current) return;
+          setIsAudioLoading(false);
           startBrowserFallback(text, seq);
         };
-        await audioRef.current.play();
+        player.load();
+        await waitAudioReady(player, 8000);
+        if (seq !== speechSeqRef.current) return;
+
+        setIsAudioLoading(false);
+        await player.play();
       } catch {
         if (seq !== speechSeqRef.current) return;
         setIsAudioLoading(false);

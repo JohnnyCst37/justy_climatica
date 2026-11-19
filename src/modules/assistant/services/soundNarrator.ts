@@ -16,6 +16,44 @@ export function buildContextualGreeting(
   return `Nesta trilha você ouve os saberes do território e vê quais escolas já estão defendendo ${community.titulo}.`;
 }
 
+const MOBILE_UNLOCK_SILENT_WAV =
+  'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+
+export function unlockMobileAudioElement(audioEl: HTMLAudioElement): void {
+  try {
+    audioEl.src = MOBILE_UNLOCK_SILENT_WAV;
+    const playPromise = audioEl.play();
+    if (playPromise && typeof playPromise.then === 'function') {
+      void playPromise
+        .then(() => {
+          audioEl.pause();
+          audioEl.currentTime = 0;
+        })
+        .catch(() => undefined);
+    }
+  } catch {
+    // ignore mobile pre-unlock restrictions
+  }
+}
+
+export function waitAudioReady(audioEl: HTMLAudioElement, timeoutMs = 8000): Promise<void> {
+  if (audioEl.readyState >= 2) return Promise.resolve();
+  return new Promise((resolve) => {
+    let settled = false;
+    const done = () => {
+      if (settled) return;
+      settled = true;
+      audioEl.removeEventListener('canplay', done);
+      audioEl.removeEventListener('loadeddata', done);
+      window.clearTimeout(timer);
+      resolve();
+    };
+    const timer = window.setTimeout(done, timeoutMs);
+    audioEl.addEventListener('canplay', done, { once: true });
+    audioEl.addEventListener('loadeddata', done, { once: true });
+  });
+}
+
 export function stopAllAudio(audioEl: HTMLAudioElement | null): void {
   if (audioEl) {
     audioEl.pause();

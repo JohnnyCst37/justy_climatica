@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Award, Lock, RotateCcw, Volume2, VolumeX } from 'lucide-react';
+import { Award, Lock, Radio, RotateCcw, Volume2, VolumeX } from 'lucide-react';
 import { useCommunitiesList } from './shared/hooks/useCommunitiesList';
 import type { AgeGroupKey, ThemeSessionKey, VisitorCategory } from './shared/types/domain';
 import { BioPatrimonioLogo } from './shared/components/Icons';
@@ -13,6 +13,8 @@ import { EventCoverScreen } from './modules/kiosk/components/EventCoverScreen';
 import { KioskLockModal } from './modules/kiosk/components/KioskLockModal';
 import { StandaloneSubmissionPage } from './modules/submissions/components/StandaloneSubmissionPage';
 import { LiveAccessDashboardPage } from './modules/presence/components/LiveAccessDashboardPage';
+import { PublicLiveGalleryPage } from './modules/gallery/components/PublicLiveGalleryPage';
+import { LiveCoverageStudioPage } from './modules/gallery/components/LiveCoverageStudioPage';
 import {
   endPresenceSession,
   heartbeatPresenceSession,
@@ -37,10 +39,28 @@ function checkIsAccessDashboardRoute(): boolean {
   );
 }
 
+function checkIsGalleryRoute(): boolean {
+  if (typeof window === 'undefined') return false;
+  return (
+    window.location.pathname.startsWith('/galeria') ||
+    new URLSearchParams(window.location.search).get('modo') === 'galeria'
+  );
+}
+
+function checkIsCoverageRoute(): boolean {
+  if (typeof window === 'undefined') return false;
+  return (
+    window.location.pathname.startsWith('/cobertura') ||
+    new URLSearchParams(window.location.search).get('modo') === 'cobertura'
+  );
+}
+
 export const App: React.FC = () => {
   const { communities: allCommunities } = useCommunitiesList();
   const [isSubmitRoute, setIsSubmitRoute] = useState<boolean>(checkIsSubmitRoute);
   const [isAccessRoute, setIsAccessRoute] = useState<boolean>(checkIsAccessDashboardRoute);
+  const [isGalleryRoute, setIsGalleryRoute] = useState<boolean>(checkIsGalleryRoute);
+  const [isCoverageRoute, setIsCoverageRoute] = useState<boolean>(checkIsCoverageRoute);
   const [selectedId, setSelectedId] = useState<string>(allCommunities[0]?.id || '');
   const [visitorSession, setVisitorSession] = useState<{
     age: number;
@@ -54,14 +74,20 @@ export const App: React.FC = () => {
   const [unlockedByProfessor, setUnlockedByProfessor] = useState(false);
   const [adminPromptOpen, setAdminPromptOpen] = useState(false);
   const [quizOpen, setQuizOpen] = useState(false);
-  const [lyriaMuted, setLyriaMuted] = useState(false);
+  const [lyriaMuted, setLyriaMuted] = useState(true);
 
   const { user, enterWithClassroom, logout } = useAuthSession();
+
+  useEffect(() => {
+    lyriaEngine.setMuted(lyriaMuted);
+  }, [lyriaMuted]);
 
   useEffect(() => {
     const onPopState = () => {
       setIsSubmitRoute(checkIsSubmitRoute());
       setIsAccessRoute(checkIsAccessDashboardRoute());
+      setIsGalleryRoute(checkIsGalleryRoute());
+      setIsCoverageRoute(checkIsCoverageRoute());
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
@@ -181,9 +207,20 @@ export const App: React.FC = () => {
 
   const handleToggleLyriaMute = useCallback(() => {
     const next = !lyriaMuted;
+    if (!next) {
+      lyriaEngine.initOnLogin();
+    }
     setLyriaMuted(next);
     lyriaEngine.setMuted(next);
   }, [lyriaMuted]);
+
+  if (isCoverageRoute) {
+    return <LiveCoverageStudioPage />;
+  }
+
+  if (isGalleryRoute) {
+    return <PublicLiveGalleryPage />;
+  }
 
   if (isAccessRoute) {
     return <LiveAccessDashboardPage />;
@@ -231,6 +268,15 @@ export const App: React.FC = () => {
             {lyriaMuted ? <VolumeX size={15} className="text-rose-600" /> : <Volume2 size={15} className="text-emerald-700" />}
             <span className="hidden sm:inline">{lyriaMuted ? 'Som mudo' : 'Trilha Lyria'}</span>
           </button>
+
+          <a
+            href="/galeria"
+            className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 min-h-[36px] rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-900 text-xs font-extrabold shadow-2xs"
+            title="Acompanhar Cobertura ao Vivo (Live)"
+          >
+            <Radio size={14} className="text-rose-600 animate-pulse" />
+            <span>Galeria<span className="hidden sm:inline"> Live</span></span>
+          </a>
 
           <button
             type="button"

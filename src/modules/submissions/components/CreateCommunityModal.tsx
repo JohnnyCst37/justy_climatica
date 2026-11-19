@@ -168,11 +168,10 @@ export const CreateCommunityModal: React.FC<CreateCommunityModalProps> = ({
                   key={turma}
                   type="button"
                   onClick={() => setSerie(turma)}
-                  className={`px-2 py-0.5 rounded-md text-[11px] font-bold border transition ${
-                    serie === turma
-                      ? 'bg-emerald-800 text-white border-emerald-800'
-                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-emerald-50 hover:border-emerald-300'
-                  }`}
+                  className={`px-2 py-0.5 rounded-md text-[11px] font-bold border transition ${serie === turma
+                    ? 'bg-emerald-800 text-white border-emerald-800'
+                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-emerald-50 hover:border-emerald-300'
+                    }`}
                 >
                   {turma}
                 </button>

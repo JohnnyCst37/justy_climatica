@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Maximize, Sparkles, UserCheck, Volume2 } from 'lucide-react';
+import { Maximize, Radio, Sparkles, UserCheck, Volume2 } from 'lucide-react';
 import type { AgeGroupKey, VisitorCategory } from '../../../shared/types/domain';
 import { SCHOOL_CLASS_OPTIONS } from '../../auth/services/accessControlService';
 import {
@@ -88,11 +88,6 @@ export const EventCoverScreen: React.FC<EventCoverScreenProps> = ({
     setPasscodeError(null);
     setStarting(true);
     try {
-      // Prepara áudio Lyria e solicita Tela Cheia diretamente no gesto do clique
-      lyriaEngine.initOnLogin();
-      lyriaEngine.setThemeAmbience('cerrado');
-      lyriaEngine.playTransitionChime();
-
       if (document.fullscreenEnabled && !document.fullscreenElement) {
         await document.documentElement.requestFullscreen().catch(() => undefined);
       }
@@ -142,19 +137,30 @@ export const EventCoverScreen: React.FC<EventCoverScreenProps> = ({
             mapas vivos, histórias reais das comunidades e desafio interativo adaptado à sua idade.
           </p>
 
-          <button
-            type="button"
-            onClick={() => {
-              lyriaEngine.initOnLogin();
-              onSpeakWelcome(WELCOME_SPEECH);
-            }}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-4 py-2.5 min-h-[44px] rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-xs sm:text-sm font-bold text-white transition-all"
-          >
-            <Volume2 size={16} className={isSpeakingWelcome ? 'text-amber-300 animate-pulse' : 'text-emerald-300'} />
-            <span>
-              {isSpeakingWelcome ? 'Recepção em áudio falando...' : 'Ouvir boas-vindas do Guia de Voz'}
-            </span>
-          </button>
+          <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2.5">
+            <a
+              href="/galeria"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-4 py-2.5 min-h-[44px] rounded-xl bg-rose-600/95 hover:bg-rose-500 border border-rose-300/40 text-xs sm:text-sm font-extrabold text-white shadow-lg transition-all"
+            >
+              <Radio size={16} className="animate-pulse shrink-0" />
+              <span>Galeria & Cobertura ao Vivo (Live)</span>
+            </a>
+
+            <button
+              type="button"
+              onClick={() => {
+                lyriaEngine.initOnLogin();
+                lyriaEngine.setMuted(false);
+                onSpeakWelcome(WELCOME_SPEECH);
+              }}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-4 py-2.5 min-h-[44px] rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-xs sm:text-sm font-bold text-white transition-all"
+            >
+              <Volume2 size={16} className={isSpeakingWelcome ? 'text-amber-300 animate-pulse' : 'text-emerald-300'} />
+              <span>
+                {isSpeakingWelcome ? 'Recepção em áudio falando...' : 'Ouvir boas-vindas (Opcional)'}
+              </span>
+            </button>
+          </div>
         </div>
 
         {/* Coluna Direita: Entrada Rápida (Nome + Idade) */}

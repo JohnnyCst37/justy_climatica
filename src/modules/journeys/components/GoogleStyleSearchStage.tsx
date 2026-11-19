@@ -102,8 +102,6 @@ export const GoogleStyleSearchStage: React.FC<GoogleStyleSearchStageProps> = ({
     } else {
       lyriaEngine.setThemeAmbience(palette.soundPreset);
     }
-    const nextOverview = buildAgeAdaptedOverview(activeCommunity, theme, visitorAge);
-    onSpeakText(nextOverview.spokenScript);
   };
 
   const handleChoosePinOrCard = (community: CommunityNode) => {
@@ -111,14 +109,11 @@ export const GoogleStyleSearchStage: React.FC<GoogleStyleSearchStageProps> = ({
     setStageMode('slides');
     setVideoChoice('pending');
     lyriaEngine.playTransitionChime();
-    const nextOverview = buildAgeAdaptedOverview(community, activeTheme, visitorAge);
-    onSpeakText(nextOverview.spokenScript);
   };
 
   const handleAcceptVideo = () => {
     setVideoChoice('yes');
     lyriaEngine.setThemeAmbience('buritis');
-    onSpeakText(PRAISE_BEFORE_VIDEO);
   };
 
   const handleAskSubmit = (e: React.FormEvent) => {
