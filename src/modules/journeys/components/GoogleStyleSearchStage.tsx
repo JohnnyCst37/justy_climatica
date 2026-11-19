@@ -76,7 +76,7 @@ export const GoogleStyleSearchStage: React.FC<GoogleStyleSearchStageProps> = ({
   onToggleLiveVoice,
   onOpenQuiz,
 }) => {
-  const [stageMode, setStageMode] = useState<'map' | 'slides'>('map');
+  const [stageMode, setStageMode] = useState<'map' | 'slides'>('slides');
   const [videoChoice, setVideoChoice] = useState<'pending' | 'yes' | 'no'>('pending');
 
   const palette = resolveBiomePalette(activeCommunity, activeTheme);
@@ -167,18 +167,18 @@ export const GoogleStyleSearchStage: React.FC<GoogleStyleSearchStageProps> = ({
 
             <div className="w-full sm:w-auto sm:ml-auto grid grid-cols-2 sm:inline-flex items-center gap-1.5 bg-white/80 p-1 rounded-full border border-slate-200">
               <button
+                onClick={() => setStageMode('slides')}
+                className={`px-3 py-1.5 sm:py-1 rounded-full text-xs font-bold flex items-center justify-center gap-1.5 transition-colors ${stageMode === 'slides' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+              >
+                <Images size={13} /> Slides & Vídeos
+              </button>
+              <button
                 onClick={() => setStageMode('map')}
                 className={`px-3 py-1.5 sm:py-1 rounded-full text-xs font-bold flex items-center justify-center gap-1.5 transition-colors ${stageMode === 'map' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'
                   }`}
               >
                 <MapIcon size={13} /> Mapa de MT
-              </button>
-              <button
-                onClick={() => setStageMode('slides')}
-                className={`px-3 py-1.5 sm:py-1 rounded-full text-xs font-bold flex items-center justify-center gap-1.5 transition-colors ${stageMode === 'slides' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'
-                  }`}
-              >
-                <Images size={13} /> Slides Visuais
               </button>
             </div>
           </div>

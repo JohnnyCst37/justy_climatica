@@ -1,5 +1,8 @@
 # 📜 PROGRESS_LOG — Diário de Engenharia (justy_climatica)
 
+## [19/11/2026] Slides & Vídeos como Tela Padrão de Entrada nas Jornadas
+- **Palco Principal (`GoogleStyleSearchStage.tsx`):** Alterado `stageMode` inicial para `'slides'` (exibindo slides e vídeos em destaque logo ao abrir a Mostra) e posicionado **`Slides & Vídeos`** antes de **`Mapa de MT`**, deixando o mapa acessível sob demanda via clique manual.
+
 ## [18/11/2026] Monitor & Alerta de Cota de IA para Super Admin (`/enviar` e `/acessos`) + Ações Visíveis no Celular
 - **Telemetria & Teste Real da API Key Gemini (`quotaGuard.ts`, `geminiGateway.ts`, `apiRouter.ts`, `firestore.rules`):** Registrados sucessos, incidentes `429/503` e consumo do pool em `GET /api/health`; criada rota autenticada `POST /api/admin/test-gemini-key` para testar a chave em 1 clique e adicionada coleção `system_alerts` sincronizada em tempo real.
 - **Painel de Alerta de Cota para Super Admin (`aiQuotaAlertService.ts`, `SuperAdminQuotaBanner.tsx`, `apiClient.ts`, `StandaloneSubmissionPage.tsx`, `LiveAccessDashboardPage.tsx`):** Qualquer erro `429` ou `503` (cota esgotada, rate-limit ou faturamento) nos dispositivos da Mostra grava um alerta sincronizado e exibe aviso vermelho/âmbar no topo de `/enviar` e `/acessos` com prefixo da `GEMINI_API_KEY` ativa, botão **`Testar Cota Agora`** e atalho direto para trocar a chave.

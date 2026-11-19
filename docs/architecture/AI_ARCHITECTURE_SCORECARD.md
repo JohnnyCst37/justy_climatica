@@ -1,7 +1,7 @@
 # 🧠 Scorecard Arquitetural de IA, Coesão & Escalabilidade (justy_climatica)
 
 > **Gerado por:** JF Architecture Sentinel v2.0 (Determinístico · Custo R$ 0,00 de Tokens)  
-> **Data:** 18/11/2026, 22:31:48  
+> **Data:** 19/11/2026, 06:57:24  
 > **Stack Detectada:** Vite (^6.2.0) · React (^19.2.4) · Express (^4.21.2) · Firebase (^13.3.0) · @google/genai (^3.1.0)
 
 ---
