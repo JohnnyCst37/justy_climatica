@@ -178,8 +178,9 @@ export async function stampPhotoFileWithWatermark(
   try {
     const [img] = await Promise.all([loadImageElement(objectUrl), ensureOfficialLogoLoaded()]);
     const maxW = 1280;
-    const scale = img.width > maxW ? maxW / img.width : 1;
-    const width = Math.max(640, Math.round(img.width * scale));
+    const maxH = 960;
+    const scale = Math.min(1, maxW / img.width, maxH / img.height);
+    const width = Math.max(360, Math.round(img.width * scale));
     const height = Math.max(360, Math.round(img.height * scale));
 
     const canvas = document.createElement('canvas');
@@ -191,9 +192,12 @@ export async function stampPhotoFileWithWatermark(
     ctx.drawImage(img, 0, 0, width, height);
     drawOfficialEventWatermark(ctx, width, height, meta);
 
-    let result = canvas.toDataURL('image/jpeg', 0.84);
-    if (result.length > 760_000) {
-      result = canvas.toDataURL('image/jpeg', 0.68);
+    let result = canvas.toDataURL('image/jpeg', 0.82);
+    if (result.length > 650_000) {
+      result = canvas.toDataURL('image/jpeg', 0.66);
+    }
+    if (result.length > 650_000) {
+      result = canvas.toDataURL('image/jpeg', 0.52);
     }
     return result;
   } finally {
@@ -227,6 +231,10 @@ export async function downloadWatermarkedPhoto(
   meta: EventWatermarkMeta
 ): Promise<void> {
   const fileName = buildOfficialDownloadFilename(meta, 'jpg');
+  if (imageUrl.startsWith('data:image/')) {
+    triggerBrowserDownload(imageUrl, fileName);
+    return;
+  }
   try {
     const [img] = await Promise.all([loadImageElement(imageUrl), ensureOfficialLogoLoaded()]);
     const canvas = document.createElement('canvas');

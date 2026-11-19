@@ -20,7 +20,7 @@ interface LiveCameraRecorderCardProps {
     title: string;
     caption: string;
     classOrGuest: string;
-  }) => Promise<unknown>;
+  }) => Promise<{ mediaUrl?: string } | void>;
   onPublishVideo: (input: {
     videoFile: File;
     title: string;
@@ -115,16 +115,21 @@ export const LiveCameraRecorderCard: React.FC<LiveCameraRecorderCardProps> = ({
     try {
       const blob = await cam.capturePhotoBlob();
       if (!blob) throw new Error('Falha ao capturar foto da câmera.');
-      await onPublishPhoto({
+      const published = await onPublishPhoto({
         fileOrBlob: blob,
         title: meta.title || 'Registro Ao Vivo da Mostra',
         caption: meta.caption || 'Cobertura em tempo real · EE CM João Ribeiro Vilela',
         classOrGuest: meta.classOrGuest || 'Mostra 19/11',
       });
       if (meta.autoDownload) {
-        const url = URL.createObjectURL(blob);
-        triggerBrowserDownload(url, buildOfficialDownloadFilename({ title: meta.title || 'foto-mostra' }, 'jpg'));
-        window.setTimeout(() => URL.revokeObjectURL(url), 5000);
+        const stampedUrl =
+          published && typeof published === 'object' && 'mediaUrl' in published && published.mediaUrl
+            ? published.mediaUrl
+            : URL.createObjectURL(blob);
+        triggerBrowserDownload(stampedUrl, buildOfficialDownloadFilename({ title: meta.title || 'foto-mostra' }, 'jpg'));
+        if (stampedUrl.startsWith('blob:')) {
+          window.setTimeout(() => URL.revokeObjectURL(stampedUrl), 5000);
+        }
       }
       setStatus({ busy: false, uploadPct: 0, feedback: 'Foto com Logo, Escola e Data/Hora publicada na Galeria Ao Vivo!' });
     } catch (err) {
@@ -142,14 +147,23 @@ export const LiveCameraRecorderCard: React.FC<LiveCameraRecorderCardProps> = ({
     setStatus({ busy: true, uploadPct: 0, feedback: '' });
     try {
       if (kind === 'photo') {
-        await onPublishPhoto({
+        const published = await onPublishPhoto({
           fileOrBlob: file,
           title: meta.title || 'Registro Fotográfico da Mostra',
           caption: meta.caption || 'Cobertura oficial · EE CM João Ribeiro Vilela',
           classOrGuest: meta.classOrGuest || 'Mostra 19/11',
         });
-        setStatus({ busy: false, uploadPct: 0, feedback: 'Foto publicada com Logo, Escola e Data/Hora!' });
+        if (meta.autoDownload && published && typeof published === 'object' && published.mediaUrl) {
+          triggerBrowserDownload(
+            published.mediaUrl,
+            buildOfficialDownloadFilename({ title: meta.title || 'foto-mostra' }, 'jpg')
+          );
+        }
+        setStatus({ busy: false, uploadPct: 0, feedback: 'Foto publicada no banco com Logo, Escola e Data/Hora!' });
       } else {
+        if (file.size > MAX_CLOUD_VIDEO_BYTES) {
+          throw new Error('Para publicar na Galeria Ao Vivo na nuvem, selecione um vídeo de até 25 MB (ou grave direto pela câmera).');
+        }
         await onPublishVideo({
           videoFile: file,
           title: meta.title || file.name.replace(/\.[^.]+$/, ''),
@@ -165,6 +179,8 @@ export const LiveCameraRecorderCard: React.FC<LiveCameraRecorderCardProps> = ({
         uploadPct: 0,
         feedback: err instanceof Error ? err.message : 'Erro no envio do arquivo.',
       });
+    } finally {
+      e.target.value = '';
     }
   };
 

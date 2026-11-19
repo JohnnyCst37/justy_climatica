@@ -1,7 +1,7 @@
 # 🧠 Scorecard Arquitetural de IA, Coesão & Escalabilidade (justy_climatica)
 
 > **Gerado por:** JF Architecture Sentinel v2.0 (Determinístico · Custo R$ 0,00 de Tokens)  
-> **Data:** 18/11/2026, 21:17:51  
+> **Data:** 18/11/2026, 21:59:19  
 > **Stack Detectada:** Vite (^6.2.0) · React (^19.2.4) · Express (^4.21.2) · Firebase (^13.3.0) · @google/genai (^3.1.0)
 
 ---
@@ -29,7 +29,7 @@
 
 ## 2. Saúde Modular, Monólitos & Coesão SRP (84 arquivos analisados)
 
-- **Acima de 250 SLOC:** 24 | **Acima de 400 SLOC:** 0
+- **Acima de 250 SLOC:** 25 | **Acima de 400 SLOC:** 0
 - **Mistura `M1 (JSX+DB)`:** 0 | **Mistura `M2 (JSX+AI)`:** 0 | **God Mixing `M3 (>=3 camadas)`:** 0
 - **Acúmulo de Hooks (`>= 8`):** 7
 - **Duplicação SSOT (`M5`):** Nenhuma detectada
@@ -48,15 +48,15 @@
 | `src/shared/data/communitiesPart2.ts` | SERVICE_API | **338** (teto: 420) | 0 (0S/0E) | — |
 | `src/shared/data/communitiesPart3.ts` | SERVICE_API | **332** (teto: 420) | 0 (0S/0E) | — |
 | `src/modules/auth/components/StaffEmailManagerModal.tsx` | UI_COMPONENT | **328** (teto: 380) | 6 (4S/1E) | — |
+| `src/modules/gallery/components/LiveCameraRecorderCard.tsx` | UI_COMPONENT | **327** (teto: 380) | 2 (2S/0E) | — |
 | `src/modules/presence/components/LiveAccessDashboardPage.tsx` | UI_COMPONENT | **321** (teto: 380) | 4 (0S/1E) | — |
-| `src/modules/gallery/components/LiveCameraRecorderCard.tsx` | UI_COMPONENT | **311** (teto: 380) | 2 (2S/0E) | — |
-| `src/modules/kiosk/components/EventCoverScreen.tsx` | UI_COMPONENT | **311** (teto: 380) | 3 (3S/0E) | — |
-| `src/modules/journeys/components/GoogleStyleSearchStage.tsx` | UI_COMPONENT | **305** (teto: 380) | 2 (0S/2E) | — |
+| `src/modules/kiosk/components/EventCoverScreen.tsx` | UI_COMPONENT | **310** (teto: 380) | 3 (3S/0E) | — |
 | `src/modules/auth/services/authService.ts` | SERVICE_API | **292** (teto: 420) | 0 (0S/0E) | M4 |
 | `src/modules/map/components/MapCanvas.tsx` | UI_COMPONENT | **284** (teto: 380) | 12 (2S/3E) | M4 |
 | `src/modules/cinema/services/cinemaSessionService.ts` | SERVICE_API | **278** (teto: 420) | 0 (0S/0E) | M4 |
 | `src/modules/auth/services/rolePasscodesService.ts` | SERVICE_API | **266** (teto: 420) | 0 (0S/0E) | M4 |
 | `src/modules/submissions/components/CreateCommunityModal.tsx` | UI_COMPONENT | **263** (teto: 380) | 10 (10S/0E) | M4 |
+| `src/modules/assistant/hooks/useGuideAssistant.ts` | HOOK | **248** (teto: 250) | 11 (2S/2E) | M4 |
 
 ---
 

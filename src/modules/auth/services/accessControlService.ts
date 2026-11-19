@@ -214,7 +214,7 @@ export function canAccessCoverageStudio(user: UserProfile | null): boolean {
   return (
     Boolean(user?.email) &&
     !user?.pendingApproval &&
-    (user?.role === 'cobertura' || user?.role === 'super_admin')
+    isStaffRole(user?.role)
   );
 }
 

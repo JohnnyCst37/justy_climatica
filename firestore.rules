@@ -48,7 +48,8 @@ service cloud.firestore {
 
     // Blocos binários dos vídeos MP4 enviados pelas turmas
     match /school_work_chunks/{chunkId} {
-      allow read, write: if isSignedIn();
+      allow read: if isSignedIn() || resource.data.videoId is string;
+      allow write: if isSignedIn();
     }
 
     // Galeria & Cobertura ao Vivo (Live) do Evento

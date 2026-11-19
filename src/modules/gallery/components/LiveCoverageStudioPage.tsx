@@ -209,20 +209,24 @@ export const LiveCoverageStudioPage: React.FC = () => {
       ) : (
         <main className="max-w-5xl mx-auto p-3.5 sm:p-8 space-y-6">
           <LiveCameraRecorderCard
-            onPublishPhoto={(input) =>
-              publishLiveCoveragePhoto({
+            onPublishPhoto={async (input) => {
+              const created = await publishLiveCoveragePhoto({
                 ...input,
                 reporterName: user?.nickname || 'Repórter',
                 reporterEmail: user?.email || '',
-              })
-            }
-            onPublishVideo={(input) =>
-              publishLiveCoverageVideo({
+              });
+              setItems((prev) => [created, ...prev.filter((x) => x.id !== created.id)]);
+              return created;
+            }}
+            onPublishVideo={async (input) => {
+              const created = await publishLiveCoverageVideo({
                 ...input,
                 reporterName: user?.nickname || 'Repórter',
                 reporterEmail: user?.email || '',
-              })
-            }
+              });
+              setItems((prev) => [created, ...prev.filter((x) => x.id !== created.id)]);
+              return created;
+            }}
           />
 
           <section className="space-y-3">
@@ -273,7 +277,10 @@ export const LiveCoverageStudioPage: React.FC = () => {
                       </button>
                       <button
                         type="button"
-                        onClick={() => void deleteLiveCoverageItem(item.id)}
+                        onClick={async () => {
+                          await deleteLiveCoverageItem(item.id, item.mediaUrl);
+                          setItems((prev) => prev.filter((x) => x.id !== item.id));
+                        }}
                         className="p-2 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700"
                         title="Excluir registro"
                       >

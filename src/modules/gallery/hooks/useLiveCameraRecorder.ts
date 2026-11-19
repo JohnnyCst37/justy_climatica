@@ -150,6 +150,17 @@ export function useLiveCameraRecorder(
   };
 
   const capturePhotoBlob = (): Promise<Blob | null> => {
+    const vid = videoRef.current;
+    if (vid && vid.readyState >= 2 && vid.videoWidth > 0 && vid.videoHeight > 0) {
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = vid.videoWidth;
+      tempCanvas.height = vid.videoHeight;
+      const tCtx = tempCanvas.getContext('2d');
+      if (tCtx) {
+        tCtx.drawImage(vid, 0, 0, tempCanvas.width, tempCanvas.height);
+        return new Promise<Blob | null>((res) => tempCanvas.toBlob(res, 'image/jpeg', 0.92));
+      }
+    }
     const canvas = canvasRef.current;
     if (!canvas) return Promise.resolve(null);
     return new Promise<Blob | null>((res) => canvas.toBlob(res, 'image/jpeg', 0.9));

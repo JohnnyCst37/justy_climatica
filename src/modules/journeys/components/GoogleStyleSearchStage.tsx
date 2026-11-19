@@ -130,9 +130,8 @@ export const GoogleStyleSearchStage: React.FC<GoogleStyleSearchStageProps> = ({
                 type="button"
                 onClick={onToggleLiveVoice}
                 aria-label="Conversar por voz ao vivo com o Guia"
-                className={`p-2 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-full transition-colors shrink-0 ${
-                  voiceStatus === 'live' ? 'bg-rose-600 text-white animate-pulse' : 'text-emerald-800 hover:bg-slate-100'
-                }`}
+                className={`p-2 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-full transition-colors shrink-0 ${voiceStatus === 'live' ? 'bg-rose-600 text-white animate-pulse' : 'text-emerald-800 hover:bg-slate-100'
+                  }`}
                 title="Conversar por voz ao vivo com o Guia"
               >
                 <Mic size={16} />
@@ -153,11 +152,10 @@ export const GoogleStyleSearchStage: React.FC<GoogleStyleSearchStageProps> = ({
                   <button
                     key={btn.key}
                     onClick={() => handleChooseTheme(btn.key)}
-                    className={`px-3 sm:px-4 py-2 min-h-[38px] rounded-full text-xs sm:text-sm font-extrabold flex items-center gap-1.5 sm:gap-2 transition-all shadow-2xs shrink-0 ${
-                      active
+                    className={`px-3 sm:px-4 py-2 min-h-[38px] rounded-full text-xs sm:text-sm font-extrabold flex items-center gap-1.5 sm:gap-2 transition-all shadow-2xs shrink-0 ${active
                         ? `${palette.accentBg} text-white scale-[1.02]`
                         : 'bg-white hover:bg-slate-50 text-slate-800 border border-slate-300/80'
-                    }`}
+                      }`}
                   >
                     {btn.icon}
                     <span>{btn.label}</span>
@@ -169,17 +167,15 @@ export const GoogleStyleSearchStage: React.FC<GoogleStyleSearchStageProps> = ({
             <div className="w-full sm:w-auto sm:ml-auto grid grid-cols-2 sm:inline-flex items-center gap-1.5 bg-white/80 p-1 rounded-full border border-slate-200">
               <button
                 onClick={() => setStageMode('map')}
-                className={`px-3 py-1.5 sm:py-1 rounded-full text-xs font-bold flex items-center justify-center gap-1.5 transition-colors ${
-                  stageMode === 'map' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'
-                }`}
+                className={`px-3 py-1.5 sm:py-1 rounded-full text-xs font-bold flex items-center justify-center gap-1.5 transition-colors ${stageMode === 'map' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'
+                  }`}
               >
                 <MapIcon size={13} /> Mapa de MT
               </button>
               <button
                 onClick={() => setStageMode('slides')}
-                className={`px-3 py-1.5 sm:py-1 rounded-full text-xs font-bold flex items-center justify-center gap-1.5 transition-colors ${
-                  stageMode === 'slides' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'
-                }`}
+                className={`px-3 py-1.5 sm:py-1 rounded-full text-xs font-bold flex items-center justify-center gap-1.5 transition-colors ${stageMode === 'slides' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'
+                  }`}
               >
                 <Images size={13} /> Slides Visuais
               </button>
@@ -280,11 +276,10 @@ export const GoogleStyleSearchStage: React.FC<GoogleStyleSearchStageProps> = ({
                 <button
                   key={item.id}
                   onClick={() => handleChoosePinOrCard(item)}
-                  className={`w-full text-left rounded-2xl p-3 border transition-all flex items-start gap-3 ${
-                    selected
+                  className={`w-full text-left rounded-2xl p-3 border transition-all flex items-start gap-3 ${selected
                       ? 'bg-white border-emerald-700 ring-2 ring-emerald-700/20 shadow-sm'
                       : 'bg-white/90 hover:bg-white border-slate-200/90'
-                  }`}
+                    }`}
                 >
                   {thumb && (
                     <img

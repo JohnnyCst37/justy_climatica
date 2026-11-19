@@ -7,6 +7,7 @@ import {
   Image as ImageIcon,
   Maximize2,
   Radio,
+  RefreshCw,
   X,
 } from 'lucide-react';
 import type { LiveCoverageItem } from '../../../shared/types/domain';
@@ -18,7 +19,10 @@ import {
   heartbeatPresenceSession,
   startPresenceSession,
 } from '../../presence/services/presenceService';
-import { subscribeLiveCoverage } from '../services/liveCoverageService';
+import {
+  fetchLiveCoverageNow,
+  subscribeLiveCoverage,
+} from '../services/liveCoverageService';
 import {
   downloadCoverageVideo,
   downloadWatermarkedPhoto,
@@ -28,6 +32,17 @@ export const PublicLiveGalleryPage: React.FC = () => {
   const [items, setItems] = useState<LiveCoverageItem[]>([]);
   const [filter, setFilter] = useState<'all' | 'photo' | 'video'>('all');
   const [zoomPhoto, setZoomPhoto] = useState<LiveCoverageItem | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleManualRefresh = async () => {
+    setRefreshing(true);
+    try {
+      const latest = await fetchLiveCoverageNow();
+      setItems(latest);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => subscribeLiveCoverage(setItems), []);
 
@@ -101,12 +116,12 @@ export const PublicLiveGalleryPage: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-1.5 bg-white/10 p-1 rounded-xl shrink-0 self-start sm:self-center">
+          <div className="flex flex-wrap items-center gap-1.5 bg-white/10 p-1 rounded-xl shrink-0 self-start sm:self-center">
             {(
               [
                 { key: 'all', label: `Tudo (${items.length})` },
-                { key: 'photo', label: 'Fotos' },
-                { key: 'video', label: 'Vídeos Live' },
+                { key: 'photo', label: `Fotos (${items.filter((i) => i.mediaType === 'photo').length})` },
+                { key: 'video', label: `Vídeos Live (${items.filter((i) => i.mediaType === 'video').length})` },
               ] as const
             ).map((tab) => (
               <button
@@ -120,6 +135,16 @@ export const PublicLiveGalleryPage: React.FC = () => {
                 {tab.label}
               </button>
             ))}
+            <button
+              type="button"
+              disabled={refreshing}
+              onClick={() => void handleManualRefresh()}
+              className="px-2.5 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold flex items-center gap-1"
+              title="Buscar atualizações agora no banco"
+            >
+              <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
+              <span className="hidden sm:inline">Atualizar</span>
+            </button>
           </div>
         </div>
 
